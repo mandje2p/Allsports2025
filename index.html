@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- PWA / iOS Standalone Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="All Sports" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="https://all-sports.co/app/img/Allsports-logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <title>All Sports Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+
+      /* Custom font simulation and scrollbar hiding */
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #000;
+        color: white;
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile web */
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      /* Animation classes */
+      .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* MADE Outer Sans Simulation */
+      @font-face {
+          font-family: 'MADE Outer Sans';
+          src: url('fonts/MADE_Outer_Sans_Regular.woff2') format('woff2'),
+                url('fonts/MADE_Outer_Sans_Regular.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+      }
+      
+      @font-face {
+          font-family: 'MADE Outer Sans';
+          src: url('fonts/MADE_Outer_Sans_Light.woff2') format('woff2'),
+                url('fonts/MADE_Outer_Sans_Light.woff') format('woff');
+          font-weight: 300;
+          font-style: normal;
+      }
+
+      /* Blair ITC Simulation */
+      @font-face {
+          font-family: 'Blair ITC';
+          src: url('fonts/blair-itc.woff2') format('woff2'),
+              url('fonts/blair-itc.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      /* Wedding Gothic ATF Simulation */
+      @font-face {
+          font-family: 'Wedding Gothic ATF';
+          src: url('fonts/wedding-gothic-atf.woff2') format('woff2'),
+              url('fonts/wedding-gothic-atf.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      :root {
+          --font-family-made-outer-sans: 'MADE Outer Sans', sans-serif;
+          --font-family-blair-itc: 'Blair ITC', sans-serif;
+          --font-family-wedding-gothic-atf: 'Wedding Gothic ATF', sans-serif;
+          --font-family-montserrat: 'Montserrat', sans-serif;
+          --font-family-syne: 'Syne', sans-serif;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.10.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "path": "https://aistudiocdn.com/path@^0.12.7"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
