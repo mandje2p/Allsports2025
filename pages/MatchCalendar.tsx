@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Layers, Image as ImageIcon } from 'lucide-react';
 import { getMatchesForLeague } from '../services/sportsService';
 import { Match } from '../types';
 import { Button } from '../components/Button';
@@ -30,6 +30,10 @@ export const MatchCalendar: React.FC = () => {
   const [selectedMatches, setSelectedMatches] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isLeagueSelectorOpen, setIsLeagueSelectorOpen] = useState(false);
+  
+  // Modal State
+  const [showFormatModal, setShowFormatModal] = useState(false);
+  const [matchesToGenerate, setMatchesToGenerate] = useState<Match[]>([]);
 
   useEffect(() => {
     if (leagueId) {
@@ -44,15 +48,21 @@ export const MatchCalendar: React.FC = () => {
         setAllMatches(matches);
         setUniqueDates(dates);
 
-        const targetDate = "2025-12-06"; // Target 2025 date
+        // Find the closest date to "Today"
         const today = new Date().toISOString().split('T')[0];
         
-        let initialIndex = dates.findIndex(d => d === targetDate);
-        if (initialIndex === -1) {
-             initialIndex = dates.findIndex(d => d >= today);
+        // Find index of the first date that is >= today
+        let initialIndex = dates.findIndex(d => d >= today);
+        
+        // If no future matches found (initialIndex is -1), 
+        // fallback to the last available date (most recent past match)
+        if (initialIndex === -1 && dates.length > 0) {
+             initialIndex = dates.length - 1;
+        } else if (initialIndex === -1) {
+             initialIndex = 0;
         }
         
-        setDateIndex(initialIndex >= 0 ? initialIndex : 0);
+        setDateIndex(initialIndex);
 
     } catch (err) {
         console.error(err);
@@ -62,6 +72,12 @@ export const MatchCalendar: React.FC = () => {
   };
 
   const toggleSelection = (matchId: string) => {
+    // Limit to 10 matches (updated rule)
+    if (!selectedMatches.has(matchId) && selectedMatches.size >= 10) {
+        alert("Maximum 10 matches allowed.");
+        return;
+    }
+
     const newSet = new Set(selectedMatches);
     if (newSet.has(matchId)) {
         newSet.delete(matchId);
@@ -71,12 +87,29 @@ export const MatchCalendar: React.FC = () => {
     setSelectedMatches(newSet);
   };
 
-  const handleGenerate = () => {
+  const initiateGeneration = () => {
     if (selectedMatches.size === 0) return;
-    const matchesToSend = allMatches.filter(m => selectedMatches.has(m.id));
-    if (matchesToSend.length > 0) {
-        navigate('/generator', { state: { matches: matchesToSend } });
+    const matches = allMatches.filter(m => selectedMatches.has(m.id));
+    setMatchesToGenerate(matches);
+
+    // Rule for Program Mode: Between 2 and 5 matches on the SAME date
+    if (matches.length >= 2 && matches.length <= 5) {
+        const firstDate = matches[0].date;
+        const allSameDate = matches.every(m => m.date === firstDate);
+
+        if (allSameDate) {
+            setShowFormatModal(true);
+            return;
+        }
     }
+
+    // Default: Navigate directly (Classic Mode)
+    navigate('/generator', { state: { matches, mode: 'classic' } });
+  };
+
+  const handleModeSelection = (mode: 'program' | 'classic') => {
+      setShowFormatModal(false);
+      navigate('/generator', { state: { matches: matchesToGenerate, mode } });
   };
 
   const handlePrevDay = () => {
@@ -99,17 +132,8 @@ export const MatchCalendar: React.FC = () => {
   // Filtering and Sorting logic
   const currentMatches = allMatches.filter(m => {
       if (m.date !== currentDate) return false;
-      
-      // Filter out past matches based on Time
-      // Construct a Date object from the match date and time
-      const matchDateTime = new Date(`${m.date}T${m.time}`);
-      const now = new Date();
-      
-      // Since mock data is in 2025, they are all in future relative to "now".
-      // But adhering to the logic requested: "lorsque le match est passé, il n'est plus visible"
-      return matchDateTime > now;
+      return true;
   }).sort((a, b) => {
-      // Sort by Time ascending
       return a.time.localeCompare(b.time);
   });
 
@@ -117,31 +141,28 @@ export const MatchCalendar: React.FC = () => {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
-    // Formats date to short style: SAM 6 DÉC
     const date = new Date(dateStr);
     const str = date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-    // Remove periods and uppercase
     return str.replace(/\./g, '').toUpperCase();
   };
 
   return (
-    <div className="bg-black text-white fade-in min-h-screen flex flex-col">
+    <div className="bg-black text-white fade-in min-h-screen flex flex-col relative">
        <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;900&display=swap');
       `}</style>
 
       {/* Top Header: Logo - Sticky */}
-      <StickyHeader 
-        showLogo={true}
-      />
+      <StickyHeader showLogo={true} />
 
-      {/* Content Container - Adjusted pt to move secondary toolbar up by 3px (150 - 3 = 147) */}
-      <div className="pt-[147px] pb-24 flex-1 flex flex-col">
+      {/* Content Container - Increased padding top to 170px to pull content down below header */}
+      <div className="pt-[170px] pb-24 flex-1 flex flex-col">
           
-          {/* Secondary Toolbar: Date Nav & League Selector - STATIC (Scrolls with page) */}
-          <div className="bg-black/95 backdrop-blur-md px-4 py-3 w-full flex items-center justify-between border-b border-white/5 shadow-md h-16 shrink-0 relative z-30">
+          {/* Secondary Toolbar: Date Nav & League Selector */}
+          {/* Removed border-b border-white/5 */}
+          <div className="bg-black/95 backdrop-blur-md px-4 py-3 w-full flex items-center justify-between shadow-md h-16 shrink-0 relative z-30">
               
-              {/* Date Navigation - Centered, Syne Font, UPPERCASE */}
+              {/* Date Navigation */}
               <div className="flex items-center justify-center gap-2 flex-1 pr-2">
                   <button 
                       onClick={handlePrevDay}
@@ -167,7 +188,7 @@ export const MatchCalendar: React.FC = () => {
                   </button>
               </div>
 
-              {/* League Selector (Right) - Fixed Width */}
+              {/* League Selector */}
               <div className="relative z-50 shrink-0">
                   <button 
                       onClick={() => setIsLeagueSelectorOpen(!isLeagueSelectorOpen)}
@@ -204,7 +225,7 @@ export const MatchCalendar: React.FC = () => {
               </div>
           </div>
 
-          {/* Content Area - Scrolls naturally */}
+          {/* Matches List */}
           <div className="flex-1 flex flex-col pt-4">
             {isLoading ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-4 mt-20">
@@ -217,70 +238,65 @@ export const MatchCalendar: React.FC = () => {
                     <p className="text-lg font-bold mb-2">No matches found</p>
                 </div>
             ) : (
-                <>
-                    {/* Matches List - Rounded Rect Design */}
-                    <div className="px-4 space-y-3">
-                        {currentMatches.length === 0 ? (
-                           <div className="flex flex-col items-center justify-center mt-10 opacity-50">
-                               <p className="text-sm">No upcoming matches for this date.</p>
-                           </div>
-                        ) : (
-                            currentMatches.map((match) => {
-                                const isSelected = selectedMatches.has(match.id);
-                                return (
-                                    <div 
-                                        key={match.id}
-                                        onClick={() => toggleSelection(match.id)}
-                                        className={`w-full h-20 rounded-[40px] px-6 flex items-center justify-between cursor-pointer transition-all border ${
-                                            isSelected 
-                                            ? 'bg-[#111] border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
-                                            : 'bg-black border-white/10 hover:border-white/30'
-                                        }`}
-                                    >
-                                        {/* Left: Selection Circle & Teams */}
-                                        <div className="flex items-center gap-6 overflow-hidden flex-1">
-                                            {/* Selection Dot */}
-                                            <div className={`w-5 h-5 rounded-full shrink-0 transition-colors border border-white/20 ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
-                                            
-                                            {/* Team Names Stacked */}
-                                            <div className="flex flex-col justify-center min-w-0">
-                                                <span className="text-sm font-bold text-white leading-tight truncate font-['Montserrat']">
-                                                    {match.homeTeam.name}
-                                                </span>
-                                                <span className="text-sm font-bold text-white leading-tight truncate mt-1 font-['Montserrat']">
-                                                    {match.awayTeam.name}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Center: Time */}
-                                        <div className="px-4">
-                                            <span className="text-sm text-gray-500 font-bold font-['Montserrat'] tracking-wide whitespace-nowrap">
-                                                {match.time}
+                <div className="px-4 space-y-3">
+                    {currentMatches.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center mt-10 opacity-50">
+                            <p className="text-sm">No upcoming matches for this date.</p>
+                        </div>
+                    ) : (
+                        currentMatches.map((match) => {
+                            const isSelected = selectedMatches.has(match.id);
+                            return (
+                                <div 
+                                    key={match.id}
+                                    onClick={() => toggleSelection(match.id)}
+                                    className={`w-full h-20 rounded-[40px] px-6 flex items-center justify-between cursor-pointer transition-all border ${
+                                        isSelected 
+                                        ? 'bg-[#111] border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                                        : 'bg-black border-white/10 hover:border-white/30'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-6 overflow-hidden flex-1">
+                                        <div className={`w-5 h-5 rounded-full shrink-0 transition-colors border border-white/20 ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
+                                        <div className="flex flex-col justify-center min-w-0">
+                                            <span 
+                                                className="text-[10px] font-bold text-white leading-tight truncate font-['Syne'] uppercase"
+                                                style={{ fontFamily: "'Syne', sans-serif" }}
+                                            >
+                                                {match.homeTeam.name}
+                                            </span>
+                                            <span 
+                                                className="text-[10px] font-bold text-white leading-tight truncate mt-1 font-['Syne'] uppercase"
+                                                style={{ fontFamily: "'Syne', sans-serif" }}
+                                            >
+                                                {match.awayTeam.name}
                                             </span>
                                         </div>
-
-                                        {/* Right: Logos */}
-                                        <div className="flex items-center gap-3 shrink-0 pl-2">
-                                            <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="w-8 h-8 object-contain" />
-                                            <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="w-8 h-8 object-contain" />
-                                        </div>
                                     </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </>
+                                    <div className="px-4">
+                                        <span className="text-xs text-gray-500 font-bold font-['Montserrat'] tracking-wide whitespace-nowrap">
+                                            {match.time}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0 pl-2">
+                                        <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="w-8 h-8 object-contain" />
+                                        <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="w-8 h-8 object-contain" />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             )}
           </div>
       </div>
 
-      {/* Floating Action Button - Fixed Width, Centered, Raised to avoid Nav Overlap */}
+      {/* Floating Action Button */}
       {selectedMatches.size > 0 && (
             <div className="fixed bottom-32 left-0 w-full px-6 z-50 animate-in slide-in-from-bottom-4 flex justify-center">
                 <div className="w-auto">
                      <Button 
-                        onClick={handleGenerate} 
+                        onClick={initiateGeneration} 
                         className="bg-white text-black font-bold shadow-xl py-2 px-6 rounded-full text-xs tracking-widest uppercase w-auto font-['Syne']"
                      >
                         {t('nav_create')} ({selectedMatches.size})
@@ -288,6 +304,54 @@ export const MatchCalendar: React.FC = () => {
                 </div>
             </div>
         )}
+
+      {/* Format Selection Modal */}
+      {showFormatModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+              <div className="bg-[#111] border border-white/10 rounded-[30px] p-6 w-full max-w-sm flex flex-col gap-6 shadow-2xl">
+                  <div className="text-center">
+                      <h3 className="text-xl font-bold font-['Syne'] text-white mb-2">{t('modal_format_title')}</h3>
+                      <p className="text-sm text-gray-400 font-['Montserrat']">{t('modal_format_subtitle').replace('MATCH_COUNT', matchesToGenerate.length.toString())}</p>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => handleModeSelection('program')}
+                        className="bg-white text-black p-4 rounded-2xl flex items-center gap-4 hover:bg-gray-200 transition-colors group"
+                      >
+                          <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
+                              <Layers size={24} />
+                          </div>
+                          <div className="flex flex-col text-left">
+                              <span className="font-bold text-sm uppercase font-['Syne']">{t('modal_format_program_title')}</span>
+                              <span className="text-[10px] text-gray-600 font-medium">{t('modal_format_program_desc')}</span>
+                          </div>
+                      </button>
+
+                      <button 
+                        onClick={() => handleModeSelection('classic')}
+                        className="bg-black border border-white/20 text-white p-4 rounded-2xl flex items-center gap-4 hover:bg-white/5 transition-colors"
+                      >
+                           <div className="w-12 h-12 rounded-xl bg-white/10 text-white flex items-center justify-center shrink-0">
+                              <ImageIcon size={24} />
+                          </div>
+                          <div className="flex flex-col text-left">
+                              <span className="font-bold text-sm uppercase font-['Syne']">{t('modal_format_classic_title')}</span>
+                              <span className="text-[10px] text-gray-400 font-medium">{t('modal_format_classic_desc').replace('MATCH_COUNT', matchesToGenerate.length.toString())}</span>
+                          </div>
+                      </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => setShowFormatModal(false)}
+                    className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-2 hover:text-white"
+                  >
+                      {t('cancel')}
+                  </button>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };

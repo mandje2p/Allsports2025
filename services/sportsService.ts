@@ -1,5 +1,6 @@
 
 
+
 import { Match } from "../types";
 
 // Configuration API
@@ -52,14 +53,14 @@ export const getMatchesForLeague = async (leagueIdentifier: string): Promise<{ d
   const leagueId = leagueIdentifier;
   if (!leagueId) return { dates: [], matches: [] };
 
-  const cacheKey = `${leagueId}-season-2025-v3`;
+  const cacheKey = `${leagueId}-season-2025-v4`; // Bump version to force fresh fetch/mock
   if (matchesCache[cacheKey]) {
       const matches = matchesCache[cacheKey];
       const dates = Array.from(new Set(matches.map(m => m.date))).sort();
       return { dates, matches };
   }
 
-  // Saison 2025 (comme demandé)
+  // Saison 2025
   const currentSeason = "2025"; 
   
   // Plage 2025
@@ -115,7 +116,7 @@ export const getMatchesForLeague = async (leagueIdentifier: string): Promise<{ d
   } catch (error) {
     console.warn("API Error (getMatchesForLeague) - Using Mock Data fallback", error);
     
-    // Génération de Mock Data réaliste pour tester la navigation en 2025
+    // Génération de Mock Data dynamique réaliste pour tester la navigation
     const mockMatches = generateMockSeason(leagueId);
     matchesCache[cacheKey] = mockMatches;
     const dates = Array.from(new Set(mockMatches.map(m => m.date))).sort();
@@ -123,13 +124,18 @@ export const getMatchesForLeague = async (leagueIdentifier: string): Promise<{ d
   }
 };
 
-// Helper pour générer des fausses données si l'API échoue
+// Helper pour générer des fausses données dynamiques autour de la date d'aujourd'hui
 const generateMockSeason = (leagueId: string): Match[] => {
     const matches: Match[] = [];
-    // Dates clés en 2025 (dont le 6 Décembre demandé par l'utilisateur)
-    const dates = [
-        "2025-12-04", "2025-12-05", "2025-12-06", "2025-12-07", "2025-12-08"
-    ];
+    const today = new Date();
+    const dates: string[] = [];
+
+    // Générer des dates : 2 jours avant à 5 jours après
+    for (let i = -2; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        dates.push(d.toISOString().split('T')[0]);
+    }
     
     dates.forEach((d, idx) => {
         // Variation des équipes pour chaque jour
@@ -146,6 +152,13 @@ const generateMockSeason = (leagueId: string): Match[] => {
                 homeTeam: { name: 'Home Team B', logoUrl: 'https://media.api-sports.io/football/teams/81.png' },
                 awayTeam: { name: 'Away Team B', logoUrl: 'https://media.api-sports.io/football/teams/91.png' },
                 venue: 'Stade Secondaire'
+             });
+             // Match additionnel pour tester le scroll
+             matches.push({
+                id: `m-${d}-3`, competition: LEAGUE_NAMES[leagueId] || 'Ligue', date: d, time: '21:45',
+                homeTeam: { name: 'Home Team C', logoUrl: 'https://media.api-sports.io/football/teams/94.png' },
+                awayTeam: { name: 'Away Team C', logoUrl: 'https://media.api-sports.io/football/teams/95.png' },
+                venue: 'Stade Tertiaire'
              });
         }
     });
