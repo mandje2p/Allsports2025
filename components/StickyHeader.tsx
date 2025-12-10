@@ -34,12 +34,13 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
 
   return (
     // Updated padding-top to respect safe-area-inset-top for iPhone PWA fullscreen mode
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-b border-white/5 pt-[calc(max(3rem,env(safe-area-inset-top)+1rem))] pb-4 px-6 max-w-md mx-auto transition-all duration-200 shadow-lg">
+    // Removed border-b border-white/5
+    <header className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl pt-[calc(max(3rem,env(safe-area-inset-top)+1rem))] pb-4 px-6 max-w-md mx-auto transition-all duration-200 shadow-lg">
       <div className="flex items-center justify-between h-12">
         {/* Left Side: Logo */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {showLogo && (
-            <div onClick={() => navigate('/home')} className="cursor-pointer h-10 flex items-center shrink-0">
+            <div className="h-10 flex items-center shrink-0 select-none">
                {!logoError ? (
                 <img 
                   src="https://all-sports.co/app/img/Allsports-logo.png" 

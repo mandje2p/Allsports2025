@@ -25,7 +25,7 @@ export const BackgroundSelection: React.FC = () => {
   const location = useLocation();
   
   // FIXED: Destructure targetIndex correctly (was mismatched as currentIndex before)
-  const { matches, targetIndex, generatedBackgrounds, matchStyles } = location.state || {};
+  const { matches, targetIndex, generatedBackgrounds, matchStyles, mode } = location.state || {};
   
   const [selectedCategory, setSelectedCategory] = useState<{ id: string, name: string } | null>(null);
 
@@ -45,7 +45,8 @@ export const BackgroundSelection: React.FC = () => {
             targetIndex, // Pass back the specific index so Generator knows which match to update
             selectedBackground: url,
             generatedBackgrounds,
-            matchStyles
+            matchStyles,
+            mode // Persist mode (classic or program)
         }
     });
   };
@@ -54,7 +55,8 @@ export const BackgroundSelection: React.FC = () => {
     <div className="min-h-screen bg-black text-white fade-in">
       <StickyHeader />
 
-      <div className="pt-40 px-6 pb-12 flex flex-col gap-6">
+      {/* Increased padding top to 44 */}
+      <div className="pt-44 px-6 pb-12 flex flex-col gap-6">
         
         {!selectedCategory ? (
             // Categories View
