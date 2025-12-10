@@ -1,5 +1,6 @@
 
 import { Match } from "../types";
+import { auth } from "../config/firebase";
 
 export interface SavedPoster {
   id: string;
@@ -14,6 +15,17 @@ export interface SavedPoster {
 const DB_NAME = 'AllSportsDB';
 const STORE_NAME = 'posters';
 const DB_VERSION = 2; // Bump version to force schema update
+
+/**
+ * Check if user is authenticated before allowing storage operations
+ */
+const requireAuth = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in to access your gallery.");
+  }
+  return user;
+};
 
 // Helper to open the database
 const openDB = (): Promise<IDBDatabase> => {
@@ -38,6 +50,9 @@ const openDB = (): Promise<IDBDatabase> => {
 };
 
 export const savePoster = async (poster: Omit<SavedPoster, 'id' | 'createdAt'>): Promise<void> => {
+  // Require authentication
+  requireAuth();
+  
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -69,6 +84,9 @@ export const savePoster = async (poster: Omit<SavedPoster, 'id' | 'createdAt'>):
 };
 
 export const getSavedPosters = async (): Promise<SavedPoster[]> => {
+  // Require authentication
+  requireAuth();
+  
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -91,6 +109,9 @@ export const getSavedPosters = async (): Promise<SavedPoster[]> => {
 };
 
 export const deletePoster = async (id: string): Promise<void> => {
+  // Require authentication
+  requireAuth();
+  
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');

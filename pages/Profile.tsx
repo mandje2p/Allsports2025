@@ -4,30 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, X, Loader2 } from 'lucide-react';
 import { Button } from '../components/Button';
+import { getUserProfile, saveUserProfile, changeUserPassword, UserProfile as FirestoreProfile } from '../services/profileService';
+import { auth } from '../config/firebase';
 
-// Local storage key
-const PROFILE_STORAGE_KEY = 'allsports_user_profile';
-
-interface UserProfile {
-  name: string;
-  companyName: string;
-  companyAddress: string;
-  email: string;
-  password: string; // Just for UI demo
-  avatarUrl: string;
-  subscription: 'FREE' | 'BASIC' | 'PRO' | 'PREMIUM';
+interface UserProfile extends FirestoreProfile {
+  password?: string; // Not stored, just for UI
 }
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: "Alex Smith",
-  companyName: "AS Media",
-  companyAddress: "123 Sport Ave, Paris",
-  email: "alex.smith@example.com",
-  password: "password123",
+  name: "",
+  companyName: "",
+  companyAddress: "",
+  email: "",
   avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
-  subscription: "PRO"
+  subscription: "FREE"
 };
 
 const getBadgeStyle = (sub: string) => {
@@ -43,26 +35,108 @@ const getBadgeStyle = (sub: string) => {
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
   
   // State for view vs edit mode
   const [viewMode, setViewMode] = useState<'VIEW' | 'EDIT'>('VIEW');
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  // Load profile on mount from LocalStorage
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Check if user has email/password provider
+  const hasEmailPassword = currentUser?.email && 
+    auth.currentUser?.providerData.some(provider => provider.providerId === 'password');
+
+  // Load profile from Firestore
   useEffect(() => {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
-      setProfile(JSON.parse(saved));
-    } else {
-      setProfile(DEFAULT_PROFILE);
+    const loadProfile = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const firestoreProfile = await getUserProfile();
+        if (firestoreProfile) {
+          setProfile(firestoreProfile);
+        } else {
+          // If no profile exists, use current user email
+          setProfile({
+            ...DEFAULT_PROFILE,
+            email: currentUser?.email || '',
+            name: currentUser?.email?.split('@')[0] || ''
+          });
+        }
+      } catch (err: any) {
+        console.error('Error loading profile:', err);
+        setError(err.message || 'Failed to load profile');
+        // Fallback to default with email
+        setProfile({
+          ...DEFAULT_PROFILE,
+          email: currentUser?.email || ''
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      loadProfile();
     }
-  }, []);
+  }, [currentUser]);
 
   const handleSave = async (updatedProfile: UserProfile) => {
-    setProfile(updatedProfile);
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
-    setViewMode('VIEW');
+    setError('');
+    try {
+      // Don't save email or password to Firestore (email comes from auth, password is handled separately)
+      const { email, password, ...profileToSave } = updatedProfile;
+      await saveUserProfile(profileToSave);
+      setProfile(updatedProfile);
+      setViewMode('VIEW');
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      setError(err.message || 'Failed to save profile');
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    
+    // Validation
+    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('Veuillez remplir tous les champs.');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Les nouveaux mots de passe ne correspondent pas.');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await changeUserPassword(passwordData.oldPassword, passwordData.newPassword);
+      // Success - close modal and reset form
+      setShowPasswordModal(false);
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordError('');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Échec du changement de mot de passe.');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -70,12 +144,23 @@ export const Profile: React.FC = () => {
       navigate('/login');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    );
+  }
+
   if (viewMode === 'EDIT') {
     return (
       <EditProfilePage 
-        currentProfile={profile} 
+        currentProfile={profile}
+        currentUserEmail={currentUser?.email || ''}
+        hasEmailPassword={hasEmailPassword || false}
         onSave={handleSave} 
-        onCancel={() => setViewMode('VIEW')} 
+        onCancel={() => setViewMode('VIEW')}
+        onPasswordChangeClick={() => setShowPasswordModal(true)}
         t={t}
       />
     );
@@ -99,6 +184,14 @@ export const Profile: React.FC = () => {
       
       <StickyHeader />
 
+      {error && (
+        <div className="pt-44 px-6 pb-4">
+          <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-3 text-red-400 text-xs">
+            {error}
+          </div>
+        </div>
+      )}
+
       {/* Reduced bottom padding to prevent scroll, increased top padding to 44 */}
       <div className="pt-44 px-6 pb-0 flex flex-col gap-6">
         
@@ -118,30 +211,36 @@ export const Profile: React.FC = () => {
                     className="text-[9px] font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-lg"
                     style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
                   >
-                      {badgeStyle.label}
+                    {badgeStyle.label}
                   </div>
                   <h2 
                     className="text-2xl text-white leading-tight truncate"
                     style={{ fontFamily: "'Syne', sans-serif", fontWeight: 400 }}
                   >
-                    {profile.name}
+                    {profile.name || 'Utilisateur'}
                   </h2>
               </div>
 
               {/* Company & Details - Centered List */}
               <div className="flex flex-col items-center gap-1.5 text-[10px] text-gray-400 font-['Montserrat'] mb-4">
-                <div className="flex items-center gap-1.5">
-                    <Briefcase size={10} className="shrink-0" />
-                    <span>{profile.companyName}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <MapPin size={10} className="shrink-0" />
-                    <span>{profile.companyAddress}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <Mail size={10} className="shrink-0" />
-                    <span>{profile.email}</span>
-                </div>
+                {profile.companyName && (
+                  <div className="flex items-center gap-1.5">
+                      <Briefcase size={10} className="shrink-0" />
+                      <span>{profile.companyName}</span>
+                  </div>
+                )}
+                {profile.companyAddress && (
+                  <div className="flex items-center gap-1.5">
+                      <MapPin size={10} className="shrink-0" />
+                      <span>{profile.companyAddress}</span>
+                  </div>
+                )}
+                {profile.email && (
+                  <div className="flex items-center gap-1.5">
+                      <Mail size={10} className="shrink-0" />
+                      <span>{profile.email}</span>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons Row */}
@@ -236,7 +335,6 @@ export const Profile: React.FC = () => {
                      </div>
                 </div>
 
-                {/* Stat Card 3: Fav Club - Wrapped in circle container for consistency */}
                 <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center p-1.5 overflow-hidden">
                         <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-contain" />
@@ -259,7 +357,7 @@ export const Profile: React.FC = () => {
             </div>
         </div>
 
-        {/* Logout Button - Red Border, Black BG, Red Text, Small, No Bottom Padding in container, increased padding bottom to 10px */}
+        {/* Logout Button */}
         <div className="w-full flex justify-center pt-2 pb-[10px]">
              <button 
                 onClick={handleLogout}
@@ -272,17 +370,36 @@ export const Profile: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <PasswordChangeModal
+          passwordData={passwordData}
+          setPasswordData={setPasswordData}
+          passwordError={passwordError}
+          changingPassword={changingPassword}
+          onClose={() => {
+            setShowPasswordModal(false);
+            setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+            setPasswordError('');
+          }}
+          onSubmit={handlePasswordChange}
+        />
+      )}
     </div>
   );
 };
 
-// ... EditProfilePage (remains same)
+// Edit Profile Page Component
 const EditProfilePage: React.FC<{
   currentProfile: UserProfile;
+  currentUserEmail: string;
+  hasEmailPassword: boolean;
   onSave: (p: UserProfile) => void;
   onCancel: () => void;
+  onPasswordChangeClick: () => void;
   t: (k: string) => string;
-}> = ({ currentProfile, onSave, onCancel, t }) => {
+}> = ({ currentProfile, currentUserEmail, hasEmailPassword, onSave, onCancel, onPasswordChangeClick, t }) => {
   const [formData, setFormData] = useState<UserProfile>(currentProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -317,7 +434,6 @@ const EditProfilePage: React.FC<{
           <img src="https://all-sports.co/app/img/Allsports-logo.png" alt="All Sports" className="h-6 object-contain" />
        </div>
 
-       {/* Increased padding top to 40 (160px) */}
        <div className="pt-40 px-6 pb-12 flex-1 overflow-y-auto">
           <div className="flex justify-center mb-8">
              <div className="relative">
@@ -371,29 +487,46 @@ const EditProfilePage: React.FC<{
              <div className="space-y-4">
                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 mt-4">Compte</h3>
                  
+                 {/* Email - Read Only */}
                  <div className="flex flex-col gap-1">
                     <input 
                       type="email" 
                       placeholder={t('profile_label_email').toUpperCase()}
-                      value={formData.email}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-['Montserrat'] focus:border-white/40 outline-none"
+                      value={currentUserEmail}
+                      disabled
+                      className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-500 font-['Montserrat'] cursor-not-allowed opacity-60"
                     />
                  </div>
-                 <div className="flex flex-col gap-1">
-                    <div className="relative">
-                        <input 
-                          type="password" 
-                          placeholder={t('profile_label_password').toUpperCase()}
-                          value={formData.password}
-                          onChange={(e) => handleChange('password', e.target.value)}
-                          className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-['Montserrat'] focus:border-white/40 outline-none pr-10"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                            <Lock size={14} />
-                        </div>
-                    </div>
-                 </div>
+                 
+                 {/* Password - Read Only with Change Link */}
+                 {hasEmailPassword && (
+                   <div className="flex flex-col gap-1">
+                      <div className="relative">
+                          <input 
+                            type="password" 
+                            placeholder={t('profile_label_password').toUpperCase()}
+                            value="••••••••"
+                            disabled
+                            className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-500 font-['Montserrat'] cursor-not-allowed opacity-60 pr-10"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                              <Lock size={14} />
+                          </div>
+                      </div>
+                      <button
+                        onClick={onPasswordChangeClick}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 underline decoration-blue-400/50 underline-offset-4 text-left mt-1"
+                      >
+                        Changer le mot de passe
+                      </button>
+                   </div>
+                 )}
+                 
+                 {!hasEmailPassword && (
+                   <div className="text-[10px] text-gray-500 italic">
+                     Connexion via {auth.currentUser?.providerData[0]?.providerId === 'google.com' ? 'Google' : 'Apple'}. Le changement de mot de passe n'est pas disponible.
+                   </div>
+                 )}
              </div>
              
              {/* Sub Info */}
@@ -405,7 +538,7 @@ const EditProfilePage: React.FC<{
                              <CreditCard size={20} />
                          </div>
                          <div>
-                             <span className="block text-sm font-bold text-white">PLAN PRO</span>
+                             <span className="block text-sm font-bold text-white">PLAN {formData.subscription}</span>
                              <span className="block text-[10px] text-gray-400">Actif jusqu'au 12/12/2025</span>
                          </div>
                      </div>
@@ -422,6 +555,97 @@ const EditProfilePage: React.FC<{
               </Button>
           </div>
        </div>
+    </div>
+  );
+};
+
+// Password Change Modal Component
+const PasswordChangeModal: React.FC<{
+  passwordData: { oldPassword: string; newPassword: string; confirmPassword: string };
+  setPasswordData: (data: { oldPassword: string; newPassword: string; confirmPassword: string }) => void;
+  passwordError: string;
+  changingPassword: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
+}> = ({ passwordData, setPasswordData, passwordError, changingPassword, onClose, onSubmit }) => {
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
+      <div className="bg-[#111] border border-white/10 rounded-[30px] p-6 w-full max-w-sm flex flex-col gap-6 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold font-['Syne'] text-white">Changer le mot de passe</h3>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+
+        {passwordError && (
+          <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-3 text-red-400 text-xs">
+            {passwordError}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-400 font-bold uppercase tracking-widest">Ancien mot de passe</label>
+            <input
+              type="password"
+              value={passwordData.oldPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-['Montserrat'] focus:border-white/40 outline-none"
+              placeholder="Entrez votre ancien mot de passe"
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-400 font-bold uppercase tracking-widest">Nouveau mot de passe</label>
+            <input
+              type="password"
+              value={passwordData.newPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-['Montserrat'] focus:border-white/40 outline-none"
+              placeholder="Entrez votre nouveau mot de passe"
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-400 font-bold uppercase tracking-widest">Confirmer le nouveau mot de passe</label>
+            <input
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-['Montserrat'] focus:border-white/40 outline-none"
+              placeholder="Confirmez votre nouveau mot de passe"
+              disabled={changingPassword}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={onClose}
+            disabled={changingPassword}
+            className="flex-1 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={changingPassword}
+            className="flex-1 py-3 rounded-full bg-white text-black font-bold text-xs hover:bg-gray-200 transition-colors uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {changingPassword ? (
+              <>
+                <Loader2 className="animate-spin" size={16} />
+                Changement...
+              </>
+            ) : (
+              'Changer'
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

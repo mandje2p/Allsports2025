@@ -10,7 +10,7 @@ import { Apple } from 'lucide-react';
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, loginWithApple } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,20 +21,41 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-        await login(email);
+        await login(email, password);
         navigate('/home');
     } catch (err: any) {
-        setError('Failed to log in');
+        console.error('Login error:', err);
+        setError(err.message || 'Failed to log in. Please check your credentials.');
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
     try {
         await loginWithGoogle();
         navigate('/home');
-    } catch (err) {
-        console.error(err);
+    } catch (err: any) {
+        console.error('Google login error:', err);
+        setError(err.message || 'Failed to sign in with Google.');
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+        await loginWithApple();
+        navigate('/home');
+    } catch (err: any) {
+        console.error('Apple login error:', err);
+        setError(err.message || 'Failed to sign in with Apple.');
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -96,8 +117,9 @@ export const Login: React.FC = () => {
           <div className="flex flex-col gap-2 mt-0">
              {/* Apple Button */}
              <button 
-                onClick={handleGoogleLogin} 
-                className="w-full bg-black border border-white/20 rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                onClick={handleAppleLogin}
+                disabled={loading}
+                className="w-full bg-black border border-white/20 rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
              >
                 <img src="https://all-sports.co/app/img/login/apple.png" alt="Apple" className="w-4 h-4 object-contain" />
                 <span className="font-bold text-[10px] text-white font-inherit" style={{ fontFamily: 'inherit' }}>{t('auth_apple_login')}</span>
@@ -105,8 +127,9 @@ export const Login: React.FC = () => {
 
              {/* Google Button */}
              <button 
-                onClick={handleGoogleLogin} 
-                className="w-full bg-white rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full bg-white rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
              >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="G" className="w-3 h-3" />
                 <span className="font-bold text-[10px] text-black font-inherit" style={{ fontFamily: 'inherit' }}>{t('auth_google_login')}</span>

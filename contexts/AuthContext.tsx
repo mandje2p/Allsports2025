@@ -1,18 +1,27 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { 
+  User as FirebaseUser,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { auth, googleProvider, appleProvider } from '../config/firebase';
 
-// Mock User Interface
 interface User {
-    uid: string;
-    email: string | null;
+  uid: string;
+  email: string | null;
 }
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  login: (email: string) => Promise<void>; // Simplified login
-  signup: (email: string) => Promise<void>; // Simplified signup
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,38 +39,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for a "mock session"
-    const storedUser = localStorage.getItem('allsports_mock_user');
-    if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        setCurrentUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
   }, []);
 
-  const login = async (email: string) => {
-     // Mock Login
-     const user = { uid: 'mock-user-123', email };
-     setCurrentUser(user);
-     localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email: string) => {
-     // Mock Signup
-     const user = { uid: 'mock-user-123', email };
-     setCurrentUser(user);
-     localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+  const signup = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const loginWithGoogle = async () => {
-      // Mock Google Login
-      const user = { uid: 'mock-google-user', email: 'user@gmail.com' };
-      setCurrentUser(user);
-      localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+    await signInWithPopup(auth, googleProvider);
+  };
+
+  const loginWithApple = async () => {
+    await signInWithPopup(auth, appleProvider);
   };
 
   const logout = async () => {
-      setCurrentUser(null);
-      localStorage.removeItem('allsports_mock_user');
+    await signOut(auth);
   };
 
   const value = {
@@ -70,12 +80,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     signup,
     logout,
-    loginWithGoogle
+    loginWithGoogle,
+    loginWithApple
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

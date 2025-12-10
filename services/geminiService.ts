@@ -1,11 +1,26 @@
 import { GoogleGenAI } from "@google/genai";
 import { PosterConfig } from "../types";
+import { auth } from "../config/firebase";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * Check if user is authenticated before allowing API calls
+ */
+const requireAuth = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in to generate posters.");
+  }
+  return user;
+};
+
 export const generatePosterImage = async (config: PosterConfig, style: 'stadium' | 'players' = 'stadium'): Promise<string> => {
+  // Require authentication
+  requireAuth();
+  
   if (!process.env.API_KEY) {
     throw new Error("API Key is missing.");
   }
