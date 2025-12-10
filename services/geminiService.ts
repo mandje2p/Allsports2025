@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const generatePosterImage = async (config: PosterConfig, style: 'stadium' | 'players' = 'stadium'): Promise<string> => {
+export const generatePosterImage = async (config: PosterConfig, style: 'stadium' | 'players' | 'abstract' | 'prestige' = 'stadium'): Promise<string> => {
   if (!process.env.API_KEY) {
     throw new Error("API Key is missing.");
   }
@@ -25,17 +25,38 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         - The image must purely focus on the architecture and the empty field.
         Negative prompt: players, people on field, athletes, american football, text, watermark, day, match in progress.
       `;
-  } else {
-      // Style: Players Versus
-      // Removed text instructions to ensure a clean background for the UI overlay
+  } else if (style === 'players') {
+      // Style: Joueurs (Specific Request)
       prompt = `
-        Ultra-realistic match poster for a soccer game.
-        Left: An intense professional soccer player wearing ${config.teamA} soccer kit (jersey and shorts), photo-realistic skin, sharp details, looking heroic.
-        Right: An intense professional soccer player wearing ${config.teamB} soccer kit (jersey and shorts), same ultra-realistic look, facing the opponent.
-        Subtle dynamic light effects in the background, but still realistic and clean.
-        High-end sports photography style, vertical 9:16 format.
-        CRITICAL: SOCCER PLAYERS ONLY. NO HELMETS. NO SHOULDER PADS. IMAGE ONLY. NO TEXT.
+        Génère un fond ultra-réaliste pour une affiche de match de football, montrant les deux joueurs les plus connus de l’équipe ${config.teamA} et de l’équipe ${config.teamB}, basés sur la saison 2025/2026.
+        Les deux joueurs doivent être représentés en action (dribble, course, frappe), avec leur visage reconnaissable, leur maillot officiel de la saison, et une pose dynamique.
+        Place le joueur de l’équipe A (${config.teamA}) à gauche et celui de l’équipe B (${config.teamB}) à droite, dans un style cinématographique avec un éclairage dramatique.
+        Le fond doit intégrer subtilement un stade flou, des effets de lumière intenses et une atmosphère compétitive.
+        Ne pas ajouter de texte ni de logos.
+        Format vertical (9:16), haute résolution, idéal pour une affiche de match.
         Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid.
+      `;
+  } else if (style === 'abstract') {
+      // Style: Abstrait (Specific Request)
+      prompt = `
+        Crée un fond abstrait pour une affiche de football, inspiré des visuels sportifs modernes.
+        Utilise uniquement un mélange artistique des deux couleurs principales des équipes du match (${config.teamA} vs ${config.teamB}).
+        Style dynamique, énergique, avec des formes abstraites, des textures fluides, des dégradés vifs et des effets lumineux modernes.
+        Le fond doit évoquer l’intensité d’un match sans montrer de joueurs ni d’éléments figuratifs.
+        Aspect premium, propre, sans texte ni logos, compatible avec des overlays typographiques.
+        Format vertical (9:16) pour une affiche.
+        Negative prompt: players, people, ball, stadium, grass, text, typography, letters, words, watermark, realistic figures.
+      `;
+  } else if (style === 'prestige') {
+      // Style: Prestige (Specific Request)
+      prompt = `
+        Génère un fond extrêmement élégant et premium pour une affiche de football prestige.
+        Palette uniquement noire et or, avec un rendu luxueux, sobre, moderne et haut de gamme.
+        Inclure des reflets dorés subtils, des lignes minimalistes, des textures métalliques fines ou des effets de lumière sophistiqués.
+        Le fond doit évoquer l’élégance, l’importance d’un match VIP ou d’une finale, sans montrer de joueurs.
+        Style minimaliste, puissant, idéal pour un événement premium.
+        Format vertical (9:16) haute résolution.
+        Negative prompt: players, people, ball, stadium, grass, green, colors, text, typography, letters, words, watermark.
       `;
   }
 

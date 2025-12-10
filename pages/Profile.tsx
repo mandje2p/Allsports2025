@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, Zap } from 'lucide-react';
 import { Button } from '../components/Button';
 
 // Local storage key
@@ -48,6 +48,7 @@ export const Profile: React.FC = () => {
   // State for view vs edit mode
   const [viewMode, setViewMode] = useState<'VIEW' | 'EDIT'>('VIEW');
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [credits, setCredits] = useState(0);
 
   // Load profile on mount from LocalStorage
   useEffect(() => {
@@ -57,6 +58,8 @@ export const Profile: React.FC = () => {
     } else {
       setProfile(DEFAULT_PROFILE);
     }
+    // Random credits for demo
+    setCredits(Math.floor(Math.random() * 101));
   }, []);
 
   const handleSave = async (updatedProfile: UserProfile) => {
@@ -113,7 +116,7 @@ export const Profile: React.FC = () => {
             <div className="flex flex-col items-center flex-1 min-w-0">
               
               {/* Badge & Name Column - Badge Above Name */}
-              <div className="flex flex-col items-center gap-2 mb-2 relative w-full">
+              <div className="flex flex-col items-center gap-2 mb-1 relative w-full">
                   <div 
                     className="text-[9px] font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-lg"
                     style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
@@ -126,10 +129,18 @@ export const Profile: React.FC = () => {
                   >
                     {profile.name}
                   </h2>
+                  
+                  {/* Credits Indicator */}
+                  <div className="flex items-center gap-2 mt-1 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                      <Zap size={10} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-[10px] font-bold text-gray-300 font-['Syne'] uppercase">
+                          {credits}/100 CREDITS RESTANTS
+                      </span>
+                  </div>
               </div>
 
               {/* Company & Details - Centered List */}
-              <div className="flex flex-col items-center gap-1.5 text-[10px] text-gray-400 font-['Montserrat'] mb-4">
+              <div className="flex flex-col items-center gap-1.5 text-[10px] text-gray-400 font-['Montserrat'] mb-4 mt-3">
                 <div className="flex items-center gap-1.5">
                     <Briefcase size={10} className="shrink-0" />
                     <span>{profile.companyName}</span>
@@ -227,8 +238,9 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
-                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center p-2">
-                         <img src="https://all-sports.co/app/img/leagues/Icons-Ligue1.png" className="w-full h-full object-contain" alt="Ligue 1" />
+                     {/* Fav League - Full fill, no padding, no background ring */}
+                     <div className="w-10 h-10 rounded-full overflow-hidden">
+                         <img src="https://all-sports.co/app/img/leagues/Icons-Ligue1.png" className="w-full h-full object-cover" alt="Ligue 1" />
                      </div>
                      <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_league')}</span>
@@ -236,10 +248,10 @@ export const Profile: React.FC = () => {
                      </div>
                 </div>
 
-                {/* Stat Card 3: Fav Club - Wrapped in circle container for consistency */}
+                {/* Stat Card 3: Fav Club - Full fill, no padding, no background ring */}
                 <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
-                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center p-1.5 overflow-hidden">
-                        <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-contain" />
+                     <div className="w-10 h-10 rounded-full overflow-hidden">
+                        <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-cover" />
                      </div>
                      <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_club')}</span>

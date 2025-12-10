@@ -8,6 +8,9 @@ import { Match } from '../types';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 
+type AiStyle = 'players' | 'abstract' | 'prestige';
+type MatchStyle = 'stadium' | AiStyle;
+
 export const Generator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,7 +23,7 @@ export const Generator: React.FC = () => {
   const mode = (location.state?.mode as 'program' | 'classic') || 'classic';
   const isProgramMode = mode === 'program';
 
-  const [matchStyles, setMatchStyles] = useState<Record<number, 'stadium' | 'players'>>({});
+  const [matchStyles, setMatchStyles] = useState<Record<number, MatchStyle>>({});
   const [matchBackgrounds, setMatchBackgrounds] = useState<Record<number, string>>(() => {
      return location.state?.generatedBackgrounds || {};
   });
@@ -29,6 +32,9 @@ export const Generator: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
   const [userProfile, setUserProfile] = useState<{avatarUrl: string, companyAddress: string} | null>(null);
+  
+  // State to track which dropdown is open
+  const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
 
   const DEFAULT_BACKGROUND = "https://all-sports.co/app/img/bg/foot/standard/bg-standard-1.jpg";
 
@@ -64,7 +70,7 @@ export const Generator: React.FC = () => {
       let hasChanges = false;
       const loopCount = isProgramMode ? 1 : matches.length;
       if (Object.keys(matchStyles).length === 0) {
-          const initialStyles: Record<number, 'stadium' | 'players'> = {};
+          const initialStyles: Record<number, MatchStyle> = {};
           for (let i = 0; i < loopCount; i++) {
               initialStyles[i] = 'stadium';
           }
@@ -83,18 +89,37 @@ export const Generator: React.FC = () => {
     generateInitial();
   }, [matches, isProgramMode]);
 
-  const handleStyleToggle = (index: number, style: 'stadium' | 'players') => {
-      setMatchStyles(prev => ({ ...prev, [index]: style }));
-      if (style === 'players') {
-          handleRegenerate(index, 'players');
-      } else {
+  const handleStyleToggle = (index: number, type: 'stadium' | 'ai') => {
+      // If switching to stadium
+      if (type === 'stadium') {
+          setMatchStyles(prev => ({ ...prev, [index]: 'stadium' }));
           if (!matchBackgrounds[index]) {
              setMatchBackgrounds(prev => ({ ...prev, [index]: DEFAULT_BACKGROUND }));
+          }
+          setOpenMenuIndex(null); // Close menu
+      } 
+      // If switching to AI
+      else {
+          const current = matchStyles[index];
+          if (current === 'stadium' || !current) {
+             setMatchStyles(prev => ({ ...prev, [index]: 'players' }));
+             // Trigger generation immediately for the default AI style
+             handleRegenerate(index, 'players');
+             setOpenMenuIndex(index); // Open menu on first switch
+          } else {
+             // Already in AI mode, toggle menu visibility
+             setOpenMenuIndex(prev => (prev === index ? null : index));
           }
       }
   };
 
-  const handleRegenerate = async (index: number, styleOverride?: 'stadium' | 'players') => {
+  const handleAiSubStyleSelect = (index: number, style: AiStyle) => {
+      setMatchStyles(prev => ({ ...prev, [index]: style }));
+      handleRegenerate(index, style);
+      setOpenMenuIndex(null); // Close menu after selection
+  };
+
+  const handleRegenerate = async (index: number, styleOverride?: MatchStyle) => {
     const match = matches[index]; 
     if (!match || isGenerating) return;
 
@@ -135,6 +160,7 @@ export const Generator: React.FC = () => {
               } 
           });
       } else {
+          // Regenerate with current AI style
           handleRegenerate(index);
       }
   };
@@ -233,6 +259,10 @@ export const Generator: React.FC = () => {
           const totalContentHeight = matches.length * itemHeight;
           const startY = ((H * 0.5) - (totalContentHeight / 2)) + 70;
 
+          // Align texts same way as logos
+          // Logos are centered at W/2 +/- (logoSize/2) (conceptually, though code uses colLeftX)
+          // Actually logos in program mode use colLeftX/colRightX
+          
           for (let i = 0; i < matches.length; i++) {
               const m = matches[i];
               const centerY = startY + (i * itemHeight) + (itemHeight / 2);
@@ -302,14 +332,12 @@ export const Generator: React.FC = () => {
           // Calculate Center X for each logo
           const homeLogoCenterX = (W / 2) - (gap / 2) - (logoSize / 2);
           const awayLogoCenterX = (W / 2) + (gap / 2) + (logoSize / 2);
+          const homeLogoX = homeLogoCenterX - (logoSize / 2);
+          const awayLogoX = awayLogoCenterX - (logoSize / 2);
 
           try {
               const homeLogo = await loadImage(match.homeTeam.logoUrl || "");
               const awayLogo = await loadImage(match.awayTeam.logoUrl || "");
-              
-              // drawImage uses top-left corner
-              const homeLogoX = homeLogoCenterX - (logoSize / 2);
-              const awayLogoX = awayLogoCenterX - (logoSize / 2);
               
               ctx.drawImage(homeLogo, homeLogoX, logoY, logoSize, logoSize);
               ctx.drawImage(awayLogo, awayLogoX, logoY, logoSize, logoSize);
@@ -387,47 +415,83 @@ export const Generator: React.FC = () => {
         
         {renderItems.map((match, index) => {
             const currentStyle = matchStyles[index] || 'stadium';
+            const isAiActive = currentStyle !== 'stadium';
             const bgUrl = matchBackgrounds[index] || DEFAULT_BACKGROUND;
             const isLoading = loadingImages[index];
+            const isMenuOpen = openMenuIndex === index;
 
             return (
                 <div key={match.id} className="w-full max-w-sm flex flex-col gap-4 items-center">
-                     {/* Control Bar */}
-                     <div className="flex items-center justify-between w-[105%] mt-[40px] mb-2 px-0">
-                         <div className="flex items-center gap-2 flex-1">
-                            <div className="flex bg-[#111] border border-white/10 rounded-full p-1 h-[40px] items-center flex-1">
+                     {/* Control Bar - Width fixed to full to align with image */}
+                     <div className="w-full flex flex-col gap-2 mt-[40px] mb-2 px-0 z-20">
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1 relative">
+                                <div className="flex bg-[#111] border border-white/10 rounded-full p-1 h-[40px] items-center flex-1 relative">
+                                    <button 
+                                        onClick={() => handleStyleToggle(index, 'stadium')}
+                                        className={`flex-1 h-full rounded-full text-[9px] font-bold transition-all font-['Syne'] flex items-center justify-center uppercase tracking-wide ${currentStyle === 'stadium' ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        BACKGROUND
+                                    </button>
+                                    <button 
+                                        onClick={() => handleStyleToggle(index, 'ai')}
+                                        className={`flex-1 h-full rounded-full text-[9px] font-bold transition-all font-['Syne'] flex items-center justify-center uppercase tracking-wide ${isAiActive ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        AI VERSION
+                                    </button>
+                                </div>
+
+                                {/* Floating Dropdown Menu for AI Styles */}
+                                {isAiActive && isMenuOpen && (
+                                  <>
+                                      {/* Invisible backdrop to handle click outside */}
+                                      <div className="fixed inset-0 z-40" onClick={() => setOpenMenuIndex(null)}></div>
+                                      
+                                      <div className="absolute top-[calc(100%+8px)] left-0 w-[calc(100%-48px)] bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl p-1 z-50 shadow-2xl animate-in fade-in slide-in-from-top-2">
+                                          <div className="flex flex-col gap-1 max-h-[120px] overflow-y-auto hide-scrollbar">
+                                            <button 
+                                                onClick={() => handleAiSubStyleSelect(index, 'players')}
+                                                className={`w-full py-2.5 px-4 rounded-lg text-[9px] font-bold uppercase transition-all text-right font-['Syne'] border ${currentStyle === 'players' ? 'bg-white text-black border-white' : 'bg-transparent text-gray-400 border-white/10 hover:bg-white/5 hover:text-white'}`}
+                                            >
+                                                JOUEURS
+                                            </button>
+                                            <button 
+                                                onClick={() => handleAiSubStyleSelect(index, 'abstract')}
+                                                className={`w-full py-2.5 px-4 rounded-lg text-[9px] font-bold uppercase transition-all text-right font-['Syne'] border ${currentStyle === 'abstract' ? 'bg-white text-black border-white' : 'bg-transparent text-gray-400 border-white/10 hover:bg-white/5 hover:text-white'}`}
+                                            >
+                                                ABSTRAIT
+                                            </button>
+                                            <button 
+                                                onClick={() => handleAiSubStyleSelect(index, 'prestige')}
+                                                className={`w-full py-2.5 px-4 rounded-lg text-[9px] font-bold uppercase transition-all text-right font-['Syne'] border ${currentStyle === 'prestige' ? 'bg-white text-black border-white' : 'bg-transparent text-gray-400 border-white/10 hover:bg-white/5 hover:text-white'}`}
+                                            >
+                                                PRESTIGE
+                                            </button>
+                                          </div>
+                                      </div>
+                                  </>
+                                )}
+
                                 <button 
-                                    onClick={() => handleStyleToggle(index, 'stadium')}
-                                    className={`flex-1 h-full rounded-full text-[9px] font-bold transition-all font-['Syne'] flex items-center justify-center uppercase tracking-wide ${currentStyle === 'stadium' ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+                                    onClick={() => handleRightAction(index)}
+                                    className="w-[40px] h-[40px] rounded-full bg-[#111] border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors active:scale-95 shrink-0"
                                 >
-                                    BACKGROUND
-                                </button>
-                                <button 
-                                    onClick={() => handleStyleToggle(index, 'players')}
-                                    className={`flex-1 h-full rounded-full text-[9px] font-bold transition-all font-['Syne'] flex items-center justify-center uppercase tracking-wide ${currentStyle === 'players' ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    AI VERSION
+                                    {currentStyle === 'stadium' ? <ImageIcon size={20} /> : <RefreshCw size={20} />}
                                 </button>
                             </div>
-                            <button 
-                                onClick={() => handleRightAction(index)}
-                                className="w-[40px] h-[40px] rounded-full bg-[#111] border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors active:scale-95 shrink-0"
-                            >
-                                {currentStyle === 'stadium' ? <ImageIcon size={20} /> : <RefreshCw size={20} />}
-                            </button>
-                         </div>
-                         {index === 0 && (
-                            <button 
-                                onClick={handleSaveAll}
-                                disabled={isSaving}
-                                className="h-[40px] px-6 ml-2 rounded-full bg-white text-black font-bold text-[9px] font-['Syne'] flex items-center justify-center uppercase tracking-widest hover:bg-gray-200 transition-all shadow-lg active:scale-95 shrink-0"
-                            >
-                                {isSaving ? <Loader2 className="animate-spin" size={16} /> : "SAVE"}
-                            </button>
-                         )}
-                    </div>
+                            {index === 0 && (
+                                <button 
+                                    onClick={handleSaveAll}
+                                    disabled={isSaving}
+                                    className="h-[40px] px-6 ml-2 rounded-full bg-white text-black font-bold text-[9px] font-['Syne'] flex items-center justify-center uppercase tracking-widest hover:bg-gray-200 transition-all shadow-lg active:scale-95 shrink-0"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : "SAVE"}
+                                </button>
+                            )}
+                        </div>
+                     </div>
 
-                    <div className="relative w-full aspect-[9/16] bg-gray-900 rounded-[30px] overflow-hidden shadow-2xl border border-white/10 mx-auto">
+                    <div className="relative w-full aspect-[9/16] bg-gray-900 rounded-[30px] overflow-hidden shadow-2xl border border-white/10 mx-auto z-0">
                          <div className="absolute inset-0 z-0">
                             {isLoading ? (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-800">
