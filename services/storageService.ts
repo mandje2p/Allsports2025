@@ -6,7 +6,7 @@ export interface SavedPoster {
   match: Match;
   backgroundImage: string;
   finalPosterUrl?: string;
-  style: 'stadium' | 'players';
+  style: 'stadium' | 'players' | 'abstract' | 'prestige';
   type?: 'program' | 'classic';
   createdAt: number;
 }
