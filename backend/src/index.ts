@@ -12,7 +12,7 @@ import './config/firebase';
 import geminiRoutes from './routes/gemini';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5001;
 
 // CORS configuration - allow requests from frontend
 const corsOptions = {

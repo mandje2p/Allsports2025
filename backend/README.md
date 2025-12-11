@@ -29,7 +29,7 @@ Add the following variables to your `.env`:
 
 ```env
 # Server Configuration
-PORT=3001
+PORT=5001
 NODE_ENV=development
 
 # Frontend URL (for CORS)
