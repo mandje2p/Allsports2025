@@ -15,6 +15,9 @@ const LEAGUES = [
     { id: '135', name: 'Serie A', logo: 'https://media.api-sports.io/football/leagues/135.png' },
     { id: '78', name: 'Bundesliga', logo: 'https://media.api-sports.io/football/leagues/78.png' },
     { id: '94', name: 'Primeira Liga', logo: 'https://media.api-sports.io/football/leagues/94.png' },
+    // Added Eredivisie and Jupiler Pro League before European Cups
+    { id: '88', name: 'Eredivisie', logo: 'https://media.api-sports.io/football/leagues/88.png' },
+    { id: '144', name: 'Jupiler Pro League', logo: 'https://media.api-sports.io/football/leagues/144.png' },
     { id: '2', name: 'Champions League', logo: 'https://media.api-sports.io/football/leagues/2.png' },
     { id: '3', name: 'Europa League', logo: 'https://media.api-sports.io/football/leagues/3.png' },
 ];

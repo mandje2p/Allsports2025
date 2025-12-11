@@ -103,8 +103,7 @@ export const Generator: React.FC = () => {
           const current = matchStyles[index];
           if (current === 'stadium' || !current) {
              setMatchStyles(prev => ({ ...prev, [index]: 'players' }));
-             // Trigger generation immediately for the default AI style
-             handleRegenerate(index, 'players');
+             // Do NOT trigger generation here, wait for user to select sub-style
              setOpenMenuIndex(index); // Open menu on first switch
           } else {
              // Already in AI mode, toggle menu visibility
@@ -159,10 +158,7 @@ export const Generator: React.FC = () => {
                   mode
               } 
           });
-      } else {
-          // Regenerate with current AI style
-          handleRegenerate(index);
-      }
+      } 
   };
 
   const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -471,13 +467,16 @@ export const Generator: React.FC = () => {
                                       </div>
                                   </>
                                 )}
-
-                                <button 
-                                    onClick={() => handleRightAction(index)}
-                                    className="w-[40px] h-[40px] rounded-full bg-[#111] border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors active:scale-95 shrink-0"
-                                >
-                                    {currentStyle === 'stadium' ? <ImageIcon size={20} /> : <RefreshCw size={20} />}
-                                </button>
+                                
+                                {/* Right Action Button - Only show for Stadium mode */}
+                                {currentStyle === 'stadium' && (
+                                    <button 
+                                        onClick={() => handleRightAction(index)}
+                                        className="w-[40px] h-[40px] rounded-full bg-[#111] border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors active:scale-95 shrink-0"
+                                    >
+                                        <ImageIcon size={20} />
+                                    </button>
+                                )}
                             </div>
                             {index === 0 && (
                                 <button 

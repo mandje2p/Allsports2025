@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { PosterConfig } from "../types";
 
@@ -26,15 +27,20 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: players, people on field, athletes, american football, text, watermark, day, match in progress.
       `;
   } else if (style === 'players') {
-      // Style: Joueurs (Specific Request)
+      // Style: Joueurs (Specific Request - Updated for Large Figures & Single Ball)
       prompt = `
-        Génère un fond ultra-réaliste pour une affiche de match de football, montrant les deux joueurs les plus connus de l’équipe ${config.teamA} et de l’équipe ${config.teamB}, basés sur la saison 2025/2026.
-        Les deux joueurs doivent être représentés en action (dribble, course, frappe), avec leur visage reconnaissable, leur maillot officiel de la saison, et une pose dynamique.
-        Place le joueur de l’équipe A (${config.teamA}) à gauche et celui de l’équipe B (${config.teamB}) à droite, dans un style cinématographique avec un éclairage dramatique.
-        Le fond doit intégrer subtilement un stade flou, des effets de lumière intenses et une atmosphère compétitive.
-        Ne pas ajouter de texte ni de logos.
-        Format vertical (9:16), haute résolution, idéal pour une affiche de match.
-        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid.
+        Génère un fond ultra-réaliste pour une affiche de match de football, mettant en scène les deux joueurs les plus connus de l’équipe ${config.teamA} et de l’équipe ${config.teamB} pour la saison 2025/2026.
+
+        Les deux joueurs doivent être représentés en action, en poses dynamiques, avec un rendu photographique très réaliste.
+        IMPORTANT : les joueurs doivent être grands, imposants, bien visibles et occuper une grande partie de la hauteur de l’image, de manière à rester parfaitement lisibles même si des logos viennent se superposer par-dessus dans l’affiche finale.
+        Le joueur de l’équipe A (${config.teamA}) doit être placé à gauche et celui de l’équipe B (${config.teamB}) à droite.
+
+        CONTRAINTE : il doit y avoir EXACTEMENT UN SEUL ballon, visible au sol ou en mouvement, mais unique dans toute l’image.
+
+        Le fond doit inclure un stade légèrement flouté, une atmosphère intense, un éclairage cinématographique.
+        Aucun texte, aucun logo.
+        Format vertical haute résolution, optimisé pour une affiche de match.
+        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, many balls, extra balls, duplicate balls.
       `;
   } else if (style === 'abstract') {
       // Style: Abstrait (Specific Request)
