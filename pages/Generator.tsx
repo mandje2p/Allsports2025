@@ -431,8 +431,8 @@ export const Generator: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white fade-in">
       <StickyHeader />
-      {/* Increased top padding from 32 to 44 to clear header */}
-      <div className="pt-44 pb-24 px-4 flex flex-col gap-8 items-center">
+      {/* Increased top padding from 32 to 44 to clear header - Reduced for better spacing */}
+      <div className="pt-[124px] pb-24 px-4 flex flex-col gap-8 items-center">
         
         {renderItems.map((match, index) => {
             const currentStyle = matchStyles[index] || 'stadium';

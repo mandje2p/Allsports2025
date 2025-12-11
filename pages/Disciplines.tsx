@@ -66,8 +66,8 @@ export const Disciplines: React.FC = () => {
     <div className="min-h-screen bg-black fade-in">
       <StickyHeader />
 
-      {/* Increased top padding to 44 for PWA clearance */}
-      <div className="pt-44 px-6 flex flex-col">
+      {/* Increased top padding to 44 for PWA clearance - Reduced for better spacing */}
+      <div className="pt-[124px] px-6 flex flex-col">
         <SportCard 
           sportName={t('sport_football')}
           image="https://all-sports.co/app/img/sports/football.png"

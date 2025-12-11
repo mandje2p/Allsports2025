@@ -32,8 +32,8 @@ export const Badges: React.FC = () => {
     <div className="min-h-screen bg-black text-white fade-in">
       <StickyHeader />
 
-      {/* Increased padding-top to 56 (approx 224px) to avoid header overlap */}
-      <div className="pt-56 px-4 pb-24">
+      {/* Increased padding-top to 56 - Reduced spacing */}
+      <div className="pt-[160px] px-4 pb-24">
         {/* Grid: 4 columns, gap-x-0 for horizontal, reduced gap-y-0.5 for vertical spacing */}
         <div className="grid grid-cols-4 gap-x-0 gap-y-0.5">
             {allBadges.map((badge) => (
