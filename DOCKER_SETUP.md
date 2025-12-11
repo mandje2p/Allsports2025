@@ -35,7 +35,7 @@ docker-compose down
 ```
 
 The app will be available at:
-- **Frontend**: http://localhost:5002
+- **Frontend**: http://localhost:5004
 - **Backend**: http://localhost:5001
 
 ### 3. Development Mode
@@ -51,7 +51,7 @@ docker-compose -f docker-compose.dev.yml down
 ```
 
 Development URLs:
-- **Frontend**: http://localhost:5002
+- **Frontend**: http://localhost:5004
 - **Backend**: http://localhost:5001
 
 ## Docker Files Overview
@@ -76,7 +76,7 @@ Development URLs:
 │  │    Frontend      │      │     Backend      │         │
 │  │    (Nginx)       │      │    (Node.js)     │         │
 │  │                  │      │                  │         │
-│  │  Port 5000 ──────┼──────┼── Port 5001      │         │
+│  │  Port 5004 ──────┼──────┼── Port 5001      │         │
 │  │                  │ API  │                  │         │
 │  │  Static files    │ calls│  Gemini API      │         │
 │  │  SPA routing     │      │  Firebase Auth   │         │
@@ -86,7 +86,7 @@ Development URLs:
            │                          │
            ▼                          ▼
       Browser                   External APIs
-    (Port 5000)               (Gemini, Firebase)
+    (Port 5004)               (Gemini, Firebase)
 ```
 
 ## Building Individual Images
@@ -106,7 +106,7 @@ docker build -t allsports-frontend \
   .
 
 # Run
-docker run -p 5000:80 allsports-frontend
+docker run -p 5004:80 allsports-frontend
 ```
 
 ### Backend Only
@@ -120,7 +120,7 @@ docker build -t allsports-backend .
 docker run -p 5001:5001 \
   -e GEMINI_API_KEY=xxx \
   -e FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}' \
-  -e FRONTEND_URL=http://localhost:5002 \
+  -e FRONTEND_URL=http://localhost:5004 \
   allsports-backend
 ```
 
