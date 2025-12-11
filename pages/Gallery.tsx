@@ -94,8 +94,8 @@ export const Gallery: React.FC = () => {
 
       <StickyHeader />
 
-      {/* Increased top padding to 48 */}
-      <div className="pt-48 px-4 pb-4">
+      {/* Increased top padding to 48 - Reduced spacing */}
+      <div className="pt-[140px] px-4 pb-4">
         {isLoading ? (
             <div className="flex justify-center mt-20">
                 <Loader2 className="animate-spin text-white" size={32} />

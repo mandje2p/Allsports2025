@@ -162,8 +162,8 @@ export const MatchCalendar: React.FC = () => {
       {/* Top Header: Logo - Sticky */}
       <StickyHeader showLogo={true} />
 
-      {/* Content Container - Increased padding top to 170px to pull content down below header */}
-      <div className="pt-[170px] pb-24 flex-1 flex flex-col">
+      {/* Content Container - Increased padding top to 170px to pull content down below header - Reduced further */}
+      <div className="pt-[125px] pb-24 flex-1 flex flex-col">
           
           {/* Secondary Toolbar: Date Nav & League Selector */}
           {/* Removed border-b border-white/5 */}

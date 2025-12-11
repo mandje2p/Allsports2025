@@ -44,8 +44,8 @@ export const Home: React.FC = () => {
       {/* Fixed Header */}
       <StickyHeader />
 
-      {/* Scrollable Content with increased top padding for PWA */}
-      <div className="pt-44 px-4 flex flex-col gap-4">
+      {/* Scrollable Content with reduced top padding */}
+      <div className="pt-[124px] px-4 flex flex-col gap-4">
         {leagueData.map((league) => (
           <article
             key={league.id}

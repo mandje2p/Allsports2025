@@ -51,8 +51,8 @@ export const Onboarding: React.FC = () => {
     <div className="h-full bg-black text-white fade-in flex flex-col px-6 overflow-hidden">
       <StickyHeader showLogo={true} />
 
-      {/* Increased top padding to 40 (160px) */}
-      <div className="flex-1 flex flex-col pt-40 pb-8 h-full justify-between">
+      {/* Increased top padding to 40 - Reduced for better spacing */}
+      <div className="flex-1 flex flex-col pt-[115px] pb-8 h-full justify-between">
         <form onSubmit={handleNext} className="flex flex-col h-full w-full">
             
             <div className="flex-1 flex flex-col gap-6 justify-center w-full">

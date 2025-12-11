@@ -108,8 +108,8 @@ export const Competitions: React.FC = () => {
       {/* Removed Title */}
       <StickyHeader />
 
-      {/* Increased top padding to 48 */}
-      <div className="pt-48 px-6 pb-24 flex flex-col gap-8">
+      {/* Increased top padding to 48 - Reduced spacing */}
+      <div className="pt-[140px] px-6 pb-24 flex flex-col gap-8">
         {COMPETITIONS_DATA.map((group) => (
           <div key={group.countryKey} className="w-full">
             {/* Country Header */}

@@ -159,8 +159,8 @@ export const BackgroundSelection: React.FC = () => {
     <div className="min-h-screen bg-black text-white fade-in">
       <StickyHeader />
 
-      {/* Increased padding top to 44 */}
-      <div className="pt-44 px-6 pb-12 flex flex-col gap-6">
+      {/* Increased padding top to 44 - Reduced for better spacing */}
+      <div className="pt-[124px] px-6 pb-12 flex flex-col gap-6">
         
         {!selectedCategory ? (
             // Categories View

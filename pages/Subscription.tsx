@@ -76,8 +76,8 @@ export const Subscription: React.FC = () => {
     <div className="min-h-screen bg-black text-white fade-in flex flex-col">
       <StickyHeader showLogo={true} />
       
-      {/* Increased padding top to 52 (approx 208px) */}
-      <div className="flex-1 flex flex-col px-6 pt-52 pb-12">
+      {/* Increased padding top to 52 - Reduced spacing */}
+      <div className="flex-1 flex flex-col px-6 pt-[150px] pb-12">
         <h1 className="text-xl font-bold font-['Syne'] text-left mb-6">{t('sub_title')}</h1>
 
         <div className="w-full flex flex-col gap-4 mb-8">

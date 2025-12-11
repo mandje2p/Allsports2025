@@ -102,8 +102,8 @@ export const Profile: React.FC = () => {
       
       <StickyHeader />
 
-      {/* Reduced bottom padding to prevent scroll, increased top padding to 44 */}
-      <div className="pt-44 px-6 pb-0 flex flex-col gap-6">
+      {/* Reduced bottom padding to prevent scroll, increased top padding to 44 - Reduced for better spacing */}
+      <div className="pt-[124px] px-6 pb-0 flex flex-col gap-6">
         
         {/* Top Section: Avatar & Info - Centered Layout */}
         <div className="flex flex-col items-center gap-5 mt-4">
@@ -329,8 +329,8 @@ const EditProfilePage: React.FC<{
           <img src="https://all-sports.co/app/img/Allsports-logo.png" alt="All Sports" className="h-6 object-contain" />
        </div>
 
-       {/* Increased padding top to 40 (160px) */}
-       <div className="pt-40 px-6 pb-12 flex-1 overflow-y-auto">
+       {/* Increased padding top to 40 - Reduced spacing */}
+       <div className="pt-[130px] px-6 pb-12 flex-1 overflow-y-auto">
           <div className="flex justify-center mb-8">
              <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/20 bg-black p-2">
