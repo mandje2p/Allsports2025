@@ -107,7 +107,7 @@ Aspect ratio: 9:16 portrait orientation for mobile poster.`;
     console.log(`[Gemini] Generating ${style} image for ${homeTeam} vs ${awayTeam}`);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash-image',
       contents: prompt,
       config: {
         responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -196,7 +196,7 @@ Aspect ratio: 9:16 portrait orientation for mobile.`;
     console.log(`[Gemini] Generating program background for ${params.matchCount} matches`);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash-image',
       contents: prompt,
       config: {
         responseModalities: [Modality.TEXT, Modality.IMAGE],
