@@ -375,32 +375,43 @@ export const cleanupExpiredPosters = async (): Promise<number> => {
       }
     });
 
-    // Delete images from Storage for all expired posters
-    const storageDeletePromises: Promise<void>[] = [];
-    expiredPosters.forEach(poster => {
-      if (poster.backgroundImage) {
-        storageDeletePromises.push(deleteImageFromStorage(poster.backgroundImage));
+    if (expiredPosters.length === 0) {
+      console.log("[Cleanup] No expired posters found");
+      return 0;
+    }
+
+    console.log(`[Cleanup] Found ${expiredPosters.length} expired poster(s) to delete`);
+
+    // Delete each expired poster (Storage images first, then Firestore document)
+    for (const poster of expiredPosters) {
+      console.log(`[Cleanup] Deleting expired poster: ${poster.id}`);
+      
+      // Delete images from Storage first
+      try {
+        await Promise.all([
+          deleteImageFromStorage(poster.backgroundImage),
+          deleteImageFromStorage(poster.finalPosterUrl)
+        ]);
+        console.log(`[Cleanup] Storage images deleted for poster: ${poster.id}`);
+      } catch (storageError) {
+        console.warn(`[Cleanup] Some images failed to delete for poster ${poster.id}:`, storageError);
+        // Continue with Firestore deletion even if Storage fails
       }
-      if (poster.finalPosterUrl) {
-        storageDeletePromises.push(deleteImageFromStorage(poster.finalPosterUrl));
+      
+      // Delete the Firestore document
+      try {
+        const posterRef = doc(db, 'posters', poster.id);
+        await deleteDoc(posterRef);
+        console.log(`[Cleanup] Firestore document deleted for poster: ${poster.id}`);
+      } catch (firestoreError) {
+        console.error(`[Cleanup] Failed to delete Firestore document for poster ${poster.id}:`, firestoreError);
       }
-    });
+    }
 
-    // Delete Storage images (don't block on errors)
-    Promise.all(storageDeletePromises).catch(err => {
-      console.warn("Some Storage images failed to delete during cleanup:", err);
-    });
-
-    // Delete expired poster documents from Firestore
-    const firestoreDeletePromises = expiredPosters.map(poster => {
-      const posterRef = doc(db, 'posters', poster.id);
-      return deleteDoc(posterRef);
-    });
-
-    await Promise.all(firestoreDeletePromises);
+    console.log(`[Cleanup] Completed cleanup of ${expiredPosters.length} expired poster(s)`);
     return expiredPosters.length;
   } catch (error) {
-    console.error("Firestore Cleanup Error:", error);
+    console.error("[Cleanup] Error during cleanup:", error);
     throw error;
   }
 };
