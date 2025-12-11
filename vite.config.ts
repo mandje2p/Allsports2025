@@ -1,3 +1,4 @@
+
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -11,8 +12,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify("AIzaSyDzQZIw9sAAMvI7Q58wcIZLrfoRtNjS9Is"),
-        'process.env.GEMINI_API_KEY': JSON.stringify("AIzaSyDzQZIw9sAAMvI7Q58wcIZLrfoRtNjS9Is")
+        'process.env.API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY),
       },
       resolve: {
         alias: {
