@@ -181,7 +181,7 @@ export const Generator: React.FC = () => {
       timeTop: 0.12,    
       logosTop: 0.35,   
       logosHeight: 0.20,
-      vsTop: 0.45,      
+      vsTop: 0.48, // Lowered slightly from 0.45
       namesTop: 0.58,   
   };
 
@@ -339,7 +339,8 @@ export const Generator: React.FC = () => {
               ctx.drawImage(awayLogo, awayLogoX, logoY, logoSize, logoSize);
           } catch (e) {}
 
-          ctx.font = "400 30px 'Montserrat'";
+          // Changed VS font to Bold 700 to match team names
+          ctx.font = "700 30px 'Montserrat'";
           ctx.fillText("VS", W / 2, H * LAYOUT.vsTop);
 
           // Use Font Bold 700
@@ -573,8 +574,8 @@ export const Generator: React.FC = () => {
                                             <img src={match.awayTeam.logoUrl} className="h-full object-contain drop-shadow-2xl" />
                                         </div>
 
-                                        <div className="absolute w-full text-center" style={{ top: '45%' }}>
-                                             <span className="text-white text-[2.8cqw] font-normal font-['Montserrat']">VS</span>
+                                        <div className="absolute w-full text-center" style={{ top: '48%' }}>
+                                             <span className="text-white text-[2.8cqw] font-bold font-['Montserrat']">VS</span>
                                         </div>
 
                                         {/* Team Names - Aligned with logos via same structure/gap */}
