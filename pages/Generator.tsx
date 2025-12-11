@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generatePosterImage } from '../services/geminiService';
-import { savePoster } from '../services/storageService';
-import { Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { savePoster, saveUserBackground } from '../services/storageService';
+import { Loader2, RefreshCw, Image as ImageIcon, Save, Check } from 'lucide-react';
 import { Match } from '../types';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -31,7 +31,8 @@ export const Generator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({});
-  const [userProfile, setUserProfile] = useState<{avatarUrl: string, companyAddress: string} | null>(null);
+  const [savedStates, setSavedStates] = useState<Record<number, boolean>>({});
+  const [userProfile, setUserProfile] = useState<{avatarUrl: string, companyAddress: string, subscription?: string} | null>(null);
   
   // State to track which dropdown is open
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
@@ -45,7 +46,8 @@ export const Generator: React.FC = () => {
      } else {
          setUserProfile({
              avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
-             companyAddress: "123 Sport Ave, Paris"
+             companyAddress: "123 Sport Ave, Paris",
+             subscription: "PRO" // Default to PRO to ensure buttons are visible during demo
          });
      }
   }, []);
@@ -57,6 +59,8 @@ export const Generator: React.FC = () => {
               if (prev[targetIndex] === selectedBackground) return prev;
               return { ...prev, [targetIndex]: selectedBackground };
           });
+          // Reset saved state if background changed externally
+          setSavedStates(prev => ({ ...prev, [targetIndex]: false }));
       }
       if (location.state?.matchStyles) {
            setMatchStyles(prev => location.state.matchStyles);
@@ -96,6 +100,7 @@ export const Generator: React.FC = () => {
           if (!matchBackgrounds[index]) {
              setMatchBackgrounds(prev => ({ ...prev, [index]: DEFAULT_BACKGROUND }));
           }
+          setSavedStates(prev => ({ ...prev, [index]: false }));
           setOpenMenuIndex(null); // Close menu
       } 
       // If switching to AI
@@ -124,6 +129,7 @@ export const Generator: React.FC = () => {
 
     const styleToUse = styleOverride || matchStyles[index] || 'stadium';
     setLoadingImages(prev => ({ ...prev, [index]: true }));
+    setSavedStates(prev => ({ ...prev, [index]: false })); // Reset saved state on new generation
     setIsGenerating(true);
 
     try {
@@ -159,6 +165,24 @@ export const Generator: React.FC = () => {
               } 
           });
       } 
+  };
+
+  const handleSaveBackground = async (index: number) => {
+      const bgUrl = matchBackgrounds[index];
+      if (!bgUrl) return;
+
+      try {
+          await saveUserBackground(bgUrl);
+          setSavedStates(prev => ({ ...prev, [index]: true }));
+          
+          // Optional: Revert back to button after 3 seconds
+          setTimeout(() => {
+              setSavedStates(prev => ({ ...prev, [index]: false }));
+          }, 3000);
+          
+      } catch (e) {
+          console.error("Failed to save background", e);
+      }
   };
 
   const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -416,6 +440,11 @@ export const Generator: React.FC = () => {
             const bgUrl = matchBackgrounds[index] || DEFAULT_BACKGROUND;
             const isLoading = loadingImages[index];
             const isMenuOpen = openMenuIndex === index;
+            const isSaved = savedStates[index];
+
+            // Removed subscription check to force button visibility as requested by user
+            // Show only if not loading, not stadium style, AND background has changed from default
+            const showSaveBgButton = !isLoading && currentStyle !== 'stadium' && bgUrl !== DEFAULT_BACKGROUND;
 
             return (
                 <div key={match.id} className="w-full max-w-sm flex flex-col gap-4 items-center">
@@ -492,6 +521,23 @@ export const Generator: React.FC = () => {
                      </div>
 
                     <div className="relative w-full aspect-[9/16] bg-gray-900 rounded-[30px] overflow-hidden shadow-2xl border border-white/10 mx-auto z-0">
+                         {/* Save BG Button or Success Message */}
+                         {showSaveBgButton && (
+                             isSaved ? (
+                                <div className="absolute top-4 right-4 z-50 bg-white text-black px-3 py-1.5 rounded-[30px] shadow-lg flex items-center gap-1 animate-in fade-in zoom-in duration-200">
+                                     <Check size={12} strokeWidth={3} />
+                                     <span className="text-[9px] font-bold font-['Syne'] uppercase">FOND D'ÉCRAN SAUVEGARDÉ !</span>
+                                </div>
+                             ) : (
+                                <button
+                                    onClick={() => handleSaveBackground(index)}
+                                    className="absolute top-4 right-4 z-50 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-black hover:bg-gray-200"
+                                >
+                                    <Save size={16} />
+                                </button>
+                             )
+                         )}
+
                          <div className="absolute inset-0 z-0">
                             {isLoading ? (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-800">

@@ -11,9 +11,16 @@ export interface SavedPoster {
   createdAt: number;
 }
 
+export interface UserBackground {
+  id: string;
+  imageUrl: string;
+  createdAt: number;
+}
+
 const DB_NAME = 'AllSportsDB';
 const STORE_NAME = 'posters';
-const DB_VERSION = 2; // Bump version to force schema update
+const BG_STORE_NAME = 'user_backgrounds';
+const DB_VERSION = 3; // Bump version for new store
 
 // Helper to open the database
 const openDB = (): Promise<IDBDatabase> => {
@@ -24,6 +31,9 @@ const openDB = (): Promise<IDBDatabase> => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(BG_STORE_NAME)) {
+        db.createObjectStore(BG_STORE_NAME, { keyPath: 'id' });
       }
     };
 
@@ -51,20 +61,13 @@ export const savePoster = async (poster: Omit<SavedPoster, 'id' | 'createdAt'>):
 
     return new Promise((resolve, reject) => {
       const request = store.add(newPoster);
-      
-      // Wait for transaction to complete to ensure data is committed
       tx.oncomplete = () => resolve();
-      
       tx.onerror = () => reject(tx.error);
-      request.onerror = (e) => {
-          const error = (e.target as any).error;
-          console.error("IndexedDB Add Error", error);
-          reject(error);
-      };
+      request.onerror = (e) => reject((e.target as any).error);
     });
   } catch (error) {
-    console.error("IndexedDB Save Exception:", error);
-    throw new Error("Failed to save poster to local database.");
+    console.error("IndexedDB Save Poster Error:", error);
+    throw new Error("Failed to save poster.");
   }
 };
 
@@ -78,14 +81,13 @@ export const getSavedPosters = async (): Promise<SavedPoster[]> => {
       const request = store.getAll();
       request.onsuccess = () => {
         const results = request.result as SavedPoster[];
-        // Sort by createdAt desc (newest first)
         results.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         resolve(results);
       };
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("IndexedDB Read Error:", error);
+    console.error("IndexedDB Read Posters Error:", error);
     return [];
   }
 };
@@ -98,15 +100,59 @@ export const deletePoster = async (id: string): Promise<void> => {
 
     return new Promise((resolve, reject) => {
       const request = store.delete(id);
-      
-      // Wait for transaction to complete to ensure data is removed
       tx.oncomplete = () => resolve();
-      
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("IndexedDB Delete Error:", error);
+    console.error("IndexedDB Delete Poster Error:", error);
     throw error;
+  }
+};
+
+// --- User Backgrounds Functions ---
+
+export const saveUserBackground = async (imageUrl: string): Promise<void> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BG_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(BG_STORE_NAME);
+
+    const newBg: UserBackground = {
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
+      imageUrl,
+      createdAt: Date.now()
+    };
+
+    return new Promise((resolve, reject) => {
+      const request = store.add(newBg);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      request.onerror = (e) => reject((e.target as any).error);
+    });
+  } catch (error) {
+    console.error("IndexedDB Save BG Error:", error);
+    throw new Error("Failed to save background.");
+  }
+};
+
+export const getUserBackgrounds = async (): Promise<UserBackground[]> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BG_STORE_NAME, 'readonly');
+    const store = tx.objectStore(BG_STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const results = request.result as UserBackground[];
+        results.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error("IndexedDB Read BG Error:", error);
+    return [];
   }
 };

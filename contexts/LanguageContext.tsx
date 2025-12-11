@@ -94,7 +94,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     onboarding_title: "Configuration",
     onboarding_subtitle: "Complétez votre profil pour personnaliser vos visuels.",
-    onboarding_btn_finish: "Terminer",
+    onboarding_btn_finish: "Terminar",
     onboarding_upload_logo: "Ajouter votre logo",
 
     // Subscription
@@ -123,6 +123,10 @@ const translations: Record<Language, Record<string, string>> = {
     feat_support: "Service client express",
     feat_support_std: "Service client standard",
 
+    // Background Selection
+    cat_my_gallery: "Ma Galerie",
+    gallery_bg_empty: "Aucun fond sauvegardé",
+
     // Modals
     modal_format_title: "TYPE D'AFFICHE",
     modal_format_subtitle: "Vous avez sélectionné MATCH_COUNT matchs sur la même date.",
@@ -137,6 +141,7 @@ const translations: Record<Language, Record<string, string>> = {
     // General
     loading: "Chargement...",
     save: "Enregistrer",
+    btn_save_bg: "SAUVEGARDER BG",
     next: "Suivant",
     processing: "Traitement",
     gallery_empty: "Aucun poster enregistré.",
@@ -246,6 +251,10 @@ const translations: Record<Language, Record<string, string>> = {
     feat_support: "Express customer support",
     feat_support_std: "Standard customer support",
 
+    // Background Selection
+    cat_my_gallery: "My Gallery",
+    gallery_bg_empty: "No saved backgrounds",
+
     // Modals
     modal_format_title: "POSTER TYPE",
     modal_format_subtitle: "You selected MATCH_COUNT matches on the same date.",
@@ -259,6 +268,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     loading: "Loading...",
     save: "Save",
+    btn_save_bg: "SAVE BG",
     next: "Next",
     processing: "Processing",
     gallery_empty: "No saved posters yet.",
@@ -368,6 +378,10 @@ const translations: Record<Language, Record<string, string>> = {
     feat_support: "Servicio al cliente express",
     feat_support_std: "Servicio al cliente estándar",
 
+    // Background Selection
+    cat_my_gallery: "Mi Galería",
+    gallery_bg_empty: "Sin fondos guardados",
+
     // Modals
     modal_format_title: "TIPO DE PÓSTER",
     modal_format_subtitle: "Has seleccionado MATCH_COUNT partidos en la misma fecha.",
@@ -381,6 +395,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     loading: "Cargando...",
     save: "Guardar",
+    btn_save_bg: "GUARDAR BG",
     next: "Siguiente",
     processing: "Procesando",
     gallery_empty: "Aún no hay pósters guardados.",
