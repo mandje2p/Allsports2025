@@ -35,7 +35,7 @@ docker-compose down
 ```
 
 The app will be available at:
-- **Frontend**: http://localhost:5000
+- **Frontend**: http://localhost:5002
 - **Backend**: http://localhost:5001
 
 ### 3. Development Mode
@@ -51,7 +51,7 @@ docker-compose -f docker-compose.dev.yml down
 ```
 
 Development URLs:
-- **Frontend**: http://localhost:5000
+- **Frontend**: http://localhost:5002
 - **Backend**: http://localhost:5001
 
 ## Docker Files Overview
@@ -120,7 +120,7 @@ docker build -t allsports-backend .
 docker run -p 5001:5001 \
   -e GEMINI_API_KEY=xxx \
   -e FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}' \
-  -e FRONTEND_URL=http://localhost:5000 \
+  -e FRONTEND_URL=http://localhost:5002 \
   allsports-backend
 ```
 

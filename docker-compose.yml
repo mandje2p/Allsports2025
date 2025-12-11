@@ -35,7 +35,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5001
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5002}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
     restart: unless-stopped
