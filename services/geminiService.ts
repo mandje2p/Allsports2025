@@ -2,7 +2,9 @@ import { PosterConfig } from "../types";
 import { auth } from "../config/firebase";
 
 // Backend API URL - configured via environment variable
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+// In production with Docker, use empty string to use relative URLs (nginx proxy)
+// In development, use the full backend URL
+const API_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 /**
  * Check if we're in development mode

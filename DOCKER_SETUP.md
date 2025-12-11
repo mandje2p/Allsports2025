@@ -35,8 +35,8 @@ docker-compose down
 ```
 
 The app will be available at:
-- **Frontend**: http://localhost:5004
-- **Backend**: http://localhost:5001
+- **App**: http://localhost:5004
+- **API**: http://localhost:5004/api/ (proxied through nginx)
 
 ### 3. Development Mode
 
@@ -69,24 +69,26 @@ Development URLs:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Docker Network                       │
-│                                                          │
-│  ┌──────────────────┐      ┌──────────────────┐         │
-│  │    Frontend      │      │     Backend      │         │
-│  │    (Nginx)       │      │    (Node.js)     │         │
-│  │                  │      │                  │         │
-│  │  Port 5004 ──────┼──────┼── Port 5001      │         │
-│  │                  │ API  │                  │         │
-│  │  Static files    │ calls│  Gemini API      │         │
-│  │  SPA routing     │      │  Firebase Auth   │         │
-│  └──────────────────┘      └──────────────────┘         │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-           │                          │
-           ▼                          ▼
-      Browser                   External APIs
-    (Port 5004)               (Gemini, Firebase)
+┌──────────────────────────────────────────────────────────┐
+│                     Docker Network                        │
+│                                                           │
+│  ┌────────────────────────┐      ┌──────────────────┐    │
+│  │    Frontend (Nginx)    │      │     Backend      │    │
+│  │                        │      │    (Node.js)     │    │
+│  │  Port 5004 (external)  │      │                  │    │
+│  │                        │ /api │  Port 5001       │    │
+│  │  Static files ─────────┼──────│  (internal only) │    │
+│  │  SPA routing           │proxy │                  │    │
+│  │  API proxy (/api/*) ───┼─────►│  Gemini API      │    │
+│  │                        │      │  Firebase Auth   │    │
+│  └────────────────────────┘      └──────────────────┘    │
+│                                                           │
+└──────────────────────────────────────────────────────────┘
+           │
+           ▼
+      Browser (Port 5004)
+      - App: http://your-server:5004
+      - API: http://your-server:5004/api/*
 ```
 
 ## Building Individual Images
@@ -207,10 +209,10 @@ docker-compose build --no-cache
 
 ## Health Checks
 
-The backend includes a health check endpoint:
+The backend health check is available through nginx proxy:
 
 ```bash
-curl http://localhost:5001/health
+curl http://localhost:5004/health
 ```
 
 Expected response:
