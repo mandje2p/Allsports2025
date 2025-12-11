@@ -47,25 +47,29 @@ export const MatchCalendar: React.FC = () => {
   const loadData = async (id: string) => {
     setIsLoading(true);
     try {
-        const { dates, matches } = await getMatchesForLeague(id);
+        const { matches } = await getMatchesForLeague(id);
         setAllMatches(matches);
 
-        // Filter dates: From Today to Today + 30 days
+        // 1. Define the 30-day window
         const today = new Date();
-        today.setHours(0,0,0,0); // Normalize to start of day
+        today.setHours(0,0,0,0);
         const todayStr = today.toISOString().split('T')[0];
         
         const maxDate = new Date(today);
         maxDate.setDate(today.getDate() + 30);
         const maxDateStr = maxDate.toISOString().split('T')[0];
 
-        // Keep only dates >= today AND <= today + 30 days
-        const filteredDates = dates.filter(d => d >= todayStr && d <= maxDateStr);
-        
-        setUniqueDates(filteredDates);
+        // 2. Filter matches that fall strictly within this window
+        const matchesInWindow = matches.filter(m => m.date >= todayStr && m.date <= maxDateStr);
 
-        // Set index to 0 (the earliest available date which is >= today)
-        if (filteredDates.length > 0) {
+        // 3. Extract unique dates from these matches only
+        // This ensures we only show dates that have matches, skipping empty days
+        const distinctDates = Array.from(new Set(matchesInWindow.map(m => m.date))).sort();
+        
+        setUniqueDates(distinctDates);
+
+        // Set index to 0 if we have matches
+        if (distinctDates.length > 0) {
              setDateIndex(0);
         } else {
              setDateIndex(-1);
@@ -163,7 +167,7 @@ export const MatchCalendar: React.FC = () => {
       <StickyHeader showLogo={true} />
 
       {/* Content Container - Increased padding top to 170px to pull content down below header - Reduced further */}
-      <div className="pt-[125px] pb-24 flex-1 flex flex-col">
+      <div className="pt-[130px] pb-24 flex-1 flex flex-col">
           
           {/* Secondary Toolbar: Date Nav & League Selector */}
           {/* Removed border-b border-white/5 */}

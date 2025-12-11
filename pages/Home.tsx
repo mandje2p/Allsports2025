@@ -45,7 +45,7 @@ export const Home: React.FC = () => {
       <StickyHeader />
 
       {/* Scrollable Content with reduced top padding */}
-      <div className="pt-[124px] px-4 flex flex-col gap-4">
+      <div className="pt-[129px] px-4 flex flex-col gap-4">
         {leagueData.map((league) => (
           <article
             key={league.id}
