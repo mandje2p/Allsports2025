@@ -33,7 +33,7 @@ export const Badges: React.FC = () => {
       <StickyHeader />
 
       {/* Increased padding-top to 56 - Reduced spacing */}
-      <div className="pt-[160px] px-4 pb-24">
+      <div className="pt-[165px] px-4 pb-24">
         {/* Grid: 4 columns, gap-x-0 for horizontal, reduced gap-y-0.5 for vertical spacing */}
         <div className="grid grid-cols-4 gap-x-0 gap-y-0.5">
             {allBadges.map((badge) => (

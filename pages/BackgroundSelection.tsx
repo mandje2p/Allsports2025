@@ -160,7 +160,7 @@ export const BackgroundSelection: React.FC = () => {
       <StickyHeader />
 
       {/* Increased padding top to 44 - Reduced for better spacing */}
-      <div className="pt-[124px] px-6 pb-12 flex flex-col gap-6">
+      <div className="pt-[129px] px-6 pb-12 flex flex-col gap-6">
         
         {!selectedCategory ? (
             // Categories View
