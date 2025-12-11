@@ -67,7 +67,40 @@ For Apple Sign-In to work, you need:
 npm install
 ```
 
-## Step 7: Test the Setup
+## Step 7: Configure Firebase Storage Security Rules
+
+1. In Firebase Console, go to **Storage** > **Rules**
+2. Replace the default rules with the following:
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload to their own posters folder
+    match /posters/{userId}/{posterId}/{allPaths=**} {
+      // Only allow uploads if the user is authenticated and matches the userId in the path
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+3. Click **Publish** to save the rules
+
+**Important**: These rules ensure that:
+- Only authenticated users can access Storage
+- Users can only upload/delete files in their own `posters/{userId}/` folder
+- Users can read any poster (for Gallery viewing)
+- All other paths are denied
+
+## Step 8: Test the Setup
 
 1. Start the development server:
    ```bash
@@ -78,6 +111,8 @@ npm install
    - Email/Password
    - Google
    - Apple (if configured)
+
+3. Test poster generation and saving to ensure Storage uploads work
 
 ## Troubleshooting
 
@@ -113,4 +148,5 @@ When deploying to production:
 2. Update environment variables in your hosting platform
 3. Add your production domain to Firebase authorized domains
 4. Configure OAuth redirect URLs for production domain
+
 

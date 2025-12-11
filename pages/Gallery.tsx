@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { getSavedPosters, deletePoster, SavedPoster } from '../services/storageService';
+import { getSavedPosters, deletePoster, cleanupExpiredPosters, SavedPoster } from '../services/storageService';
 import { Trash2, Calendar, X, Share2, Loader2, AlertTriangle } from 'lucide-react';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -19,6 +19,12 @@ export const Gallery: React.FC = () => {
   const loadPosters = async () => {
     setIsLoading(true);
     try {
+      // Clean up expired posters first (runs in background, doesn't block)
+      cleanupExpiredPosters().catch(err => {
+        console.warn("Failed to cleanup expired posters:", err);
+      });
+      
+      // Load valid (non-expired) posters
       const data = await getSavedPosters();
       setPosters(data);
     } catch (e) {
