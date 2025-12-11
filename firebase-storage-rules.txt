@@ -37,3 +37,4 @@ service firebase.storage {
 - ✅ Prevents unauthorized access to other users' files
 - ✅ Blocks all access to paths outside the `posters/` folder
 
+

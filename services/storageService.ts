@@ -5,6 +5,7 @@ import {
   collection, 
   doc, 
   setDoc, 
+  getDoc,
   getDocs, 
   deleteDoc, 
   query, 
@@ -81,15 +82,23 @@ const isStorageUrl = (url: string): boolean => {
 const extractStoragePath = (downloadUrl: string): string | null => {
   try {
     // Extract the path from the URL
+    // The pathname is: /v0/b/{bucket}/o/{encoded-path}
+    // The query string (?alt=media&token=xxx) is NOT part of pathname
     const urlObj = new URL(downloadUrl);
-    const pathMatch = urlObj.pathname.match(/\/o\/(.+)\?/);
+    
+    // Match /o/ followed by the encoded path (without the query string which is separate)
+    const pathMatch = urlObj.pathname.match(/\/o\/(.+)$/);
     if (pathMatch && pathMatch[1]) {
-      // Decode the path (it's URL encoded)
-      return decodeURIComponent(pathMatch[1]);
+      // Decode the path (it's URL encoded, e.g., %2F for /)
+      const decodedPath = decodeURIComponent(pathMatch[1]);
+      console.log("[Storage] Extracted path:", decodedPath);
+      return decodedPath;
     }
+    
+    console.warn("[Storage] Could not extract path from pathname:", urlObj.pathname);
     return null;
   } catch (error) {
-    console.warn("Failed to extract storage path from URL:", downloadUrl);
+    console.warn("[Storage] Failed to extract storage path from URL:", downloadUrl, error);
     return null;
   }
 };
@@ -98,20 +107,35 @@ const extractStoragePath = (downloadUrl: string): string | null => {
  * Delete an image from Firebase Storage if it's a Storage URL
  */
 const deleteImageFromStorage = async (imageUrl: string | undefined): Promise<void> => {
-  if (!imageUrl || !isStorageUrl(imageUrl)) {
-    return; // Not a Storage URL, skip
+  if (!imageUrl) {
+    console.log("[Storage] No image URL provided, skipping deletion");
+    return;
   }
+  
+  if (!isStorageUrl(imageUrl)) {
+    console.log("[Storage] Not a Firebase Storage URL, skipping:", imageUrl.substring(0, 50) + "...");
+    return;
+  }
+
+  console.log("[Storage] Attempting to delete image from Storage:", imageUrl.substring(0, 100) + "...");
 
   try {
     const storagePath = extractStoragePath(imageUrl);
     if (storagePath) {
+      console.log("[Storage] Deleting file at path:", storagePath);
       const storageRef = ref(storage, storagePath);
       await deleteObject(storageRef);
+      console.log("[Storage] Successfully deleted:", storagePath);
+    } else {
+      console.warn("[Storage] Could not extract path from URL:", imageUrl);
     }
   } catch (error: any) {
-    // Ignore errors if file doesn't exist (already deleted) or other non-critical errors
-    if (error.code !== 'storage/object-not-found') {
-      console.warn("Failed to delete image from Storage:", error);
+    // Ignore errors if file doesn't exist (already deleted)
+    if (error.code === 'storage/object-not-found') {
+      console.log("[Storage] File already deleted or not found:", imageUrl.substring(0, 50));
+    } else {
+      console.error("[Storage] Failed to delete image:", error.code, error.message);
+      throw error; // Re-throw so caller knows deletion failed
     }
   }
 };
@@ -281,41 +305,42 @@ export const deletePoster = async (id: string): Promise<void> => {
   const user = requireAuth();
   
   try {
-    // First verify the poster belongs to the user and get its data
+    // Get the poster document directly
     const posterRef = doc(db, 'posters', id);
-    const posterDoc = await getDocs(query(collection(db, 'posters'), where('userId', '==', user.uid)));
+    const posterDoc = await getDoc(posterRef);
     
-    // Check if this specific poster belongs to the user and get its image URLs
-    let belongsToUser = false;
-    let backgroundImageUrl: string | undefined;
-    let finalPosterUrl: string | undefined;
-    
-    posterDoc.forEach((doc) => {
-      if (doc.id === id) {
-        belongsToUser = true;
-        const data = doc.data();
-        backgroundImageUrl = data.backgroundImage;
-        finalPosterUrl = data.finalPosterUrl;
-      }
-    });
-    
-    if (!belongsToUser) {
-      throw new Error("Poster not found or you don't have permission to delete it.");
+    if (!posterDoc.exists()) {
+      throw new Error("Poster not found.");
     }
     
-    // Delete images from Storage (fire and forget - don't block on errors)
-    Promise.all([
-      deleteImageFromStorage(backgroundImageUrl),
-      deleteImageFromStorage(finalPosterUrl)
-    ]).catch(err => {
-      console.warn("Some images failed to delete from Storage:", err);
-    });
+    const posterData = posterDoc.data();
+    
+    // Verify the poster belongs to the current user
+    if (posterData.userId !== user.uid) {
+      throw new Error("You don't have permission to delete this poster.");
+    }
+    
+    // Extract image URLs
+    const backgroundImageUrl = posterData.backgroundImage;
+    const finalPosterUrl = posterData.finalPosterUrl;
+    
+    // Delete images from Storage (await to ensure they're deleted)
+    try {
+      await Promise.all([
+        deleteImageFromStorage(backgroundImageUrl),
+        deleteImageFromStorage(finalPosterUrl)
+      ]);
+    } catch (storageError: any) {
+      // Log but don't fail if Storage deletion fails (file might already be deleted)
+      console.warn("Some images failed to delete from Storage:", storageError);
+      // Continue with Firestore deletion even if Storage deletion fails
+    }
     
     // Delete the poster document from Firestore
     await deleteDoc(posterRef);
   } catch (error: any) {
     console.error("Firestore Delete Error:", error);
-    if (error.message && error.message.includes("permission")) {
+    if (error.message && (error.message.includes("permission") || error.message.includes("not found"))) {
       throw error;
     }
     throw new Error("Failed to delete poster. Please try again.");
