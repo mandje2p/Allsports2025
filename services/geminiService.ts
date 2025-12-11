@@ -27,7 +27,7 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: players, people on field, athletes, american football, text, watermark, day, match in progress.
       `;
   } else if (style === 'players') {
-      // Style: Joueurs (Specific Request - Updated for Large Figures & Single Ball)
+      // Style: Joueurs (Specific Request - Updated for Large Figures & Strict Single Ball)
       prompt = `
         Génère un fond ultra-réaliste pour une affiche de match de football, mettant en scène les deux joueurs les plus connus de l’équipe ${config.teamA} et de l’équipe ${config.teamB} pour la saison 2025/2026.
 
@@ -35,12 +35,13 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         IMPORTANT : les joueurs doivent être grands, imposants, bien visibles et occuper une grande partie de la hauteur de l’image, de manière à rester parfaitement lisibles même si des logos viennent se superposer par-dessus dans l’affiche finale.
         Le joueur de l’équipe A (${config.teamA}) doit être placé à gauche et celui de l’équipe B (${config.teamB}) à droite.
 
-        CONTRAINTE : il doit y avoir EXACTEMENT UN SEUL ballon, visible au sol ou en mouvement, mais unique dans toute l’image.
+        CONTRAINTE CRITIQUE : il doit y avoir EXACTEMENT UN SEUL ballon de football dans toute l'image. Le ballon doit être visible au sol ou en mouvement, mais UNIQUE.
+        Vérifie qu'il n'y a pas de doublons, pas de ballons dans les reflets, pas de ballons en arrière-plan. UN SEUL BALLON.
 
         Le fond doit inclure un stade légèrement flouté, une atmosphère intense, un éclairage cinématographique.
         Aucun texte, aucun logo.
         Format vertical haute résolution, optimisé pour une affiche de match.
-        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, many balls, extra balls, duplicate balls.
+        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, two balls, many balls, extra balls, duplicate balls, flying balls array.
       `;
   } else if (style === 'abstract') {
       // Style: Abstrait (Specific Request)

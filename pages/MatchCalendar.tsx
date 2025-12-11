@@ -49,23 +49,27 @@ export const MatchCalendar: React.FC = () => {
     try {
         const { dates, matches } = await getMatchesForLeague(id);
         setAllMatches(matches);
-        setUniqueDates(dates);
 
-        // Find the closest date to "Today"
-        const today = new Date().toISOString().split('T')[0];
+        // Filter dates: From Today to Today + 30 days
+        const today = new Date();
+        today.setHours(0,0,0,0); // Normalize to start of day
+        const todayStr = today.toISOString().split('T')[0];
         
-        // Find index of the first date that is >= today
-        let initialIndex = dates.findIndex(d => d >= today);
+        const maxDate = new Date(today);
+        maxDate.setDate(today.getDate() + 30);
+        const maxDateStr = maxDate.toISOString().split('T')[0];
+
+        // Keep only dates >= today AND <= today + 30 days
+        const filteredDates = dates.filter(d => d >= todayStr && d <= maxDateStr);
         
-        // If no future matches found (initialIndex is -1), 
-        // fallback to the last available date (most recent past match)
-        if (initialIndex === -1 && dates.length > 0) {
-             initialIndex = dates.length - 1;
-        } else if (initialIndex === -1) {
-             initialIndex = 0;
+        setUniqueDates(filteredDates);
+
+        // Set index to 0 (the earliest available date which is >= today)
+        if (filteredDates.length > 0) {
+             setDateIndex(0);
+        } else {
+             setDateIndex(-1);
         }
-        
-        setDateIndex(initialIndex);
 
     } catch (err) {
         console.error(err);
@@ -169,8 +173,8 @@ export const MatchCalendar: React.FC = () => {
               <div className="flex items-center justify-center gap-2 flex-1 pr-2">
                   <button 
                       onClick={handlePrevDay}
-                      disabled={dateIndex === 0}
-                      className={`p-2 rounded-full transition-colors ${dateIndex === 0 ? 'text-gray-800' : 'text-white hover:bg-white/10'}`}
+                      disabled={dateIndex <= 0}
+                      className={`p-2 rounded-full transition-colors ${dateIndex <= 0 ? 'text-gray-800' : 'text-white hover:bg-white/10'}`}
                   >
                       <ChevronLeft size={20} />
                   </button>
@@ -239,6 +243,7 @@ export const MatchCalendar: React.FC = () => {
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-10 opacity-60 mt-20">
                     <CalendarDays size={48} className="mb-4" />
                     <p className="text-lg font-bold mb-2">No matches found</p>
+                    <p className="text-xs text-gray-400">Try checking later for upcoming games.</p>
                 </div>
             ) : (
                 <div className="px-4 space-y-3">
