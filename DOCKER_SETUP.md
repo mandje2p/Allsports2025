@@ -35,8 +35,8 @@ docker-compose down
 ```
 
 The app will be available at:
-- **Frontend**: http://localhost
-- **Backend**: http://localhost:3001
+- **Frontend**: http://localhost:5000
+- **Backend**: http://localhost:5001
 
 ### 3. Development Mode
 
@@ -51,8 +51,8 @@ docker-compose -f docker-compose.dev.yml down
 ```
 
 Development URLs:
-- **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:3001
+- **Frontend**: http://localhost:5000
+- **Backend**: http://localhost:5001
 
 ## Docker Files Overview
 
@@ -76,7 +76,7 @@ Development URLs:
 │  │    Frontend      │      │     Backend      │         │
 │  │    (Nginx)       │      │    (Node.js)     │         │
 │  │                  │      │                  │         │
-│  │  Port 80 ────────┼──────┼── Port 3001      │         │
+│  │  Port 5000 ──────┼──────┼── Port 5001      │         │
 │  │                  │ API  │                  │         │
 │  │  Static files    │ calls│  Gemini API      │         │
 │  │  SPA routing     │      │  Firebase Auth   │         │
@@ -86,7 +86,7 @@ Development URLs:
            │                          │
            ▼                          ▼
       Browser                   External APIs
-    (Port 80)                 (Gemini, Firebase)
+    (Port 5000)               (Gemini, Firebase)
 ```
 
 ## Building Individual Images
@@ -102,11 +102,11 @@ docker build -t allsports-frontend \
   --build-arg VITE_FIREBASE_STORAGE_BUCKET=xxx \
   --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=xxx \
   --build-arg VITE_FIREBASE_APP_ID=xxx \
-  --build-arg VITE_BACKEND_URL=http://localhost:3001 \
+  --build-arg VITE_BACKEND_URL=http://localhost:5001 \
   .
 
 # Run
-docker run -p 80:80 allsports-frontend
+docker run -p 5000:80 allsports-frontend
 ```
 
 ### Backend Only
@@ -117,10 +117,10 @@ cd backend
 docker build -t allsports-backend .
 
 # Run
-docker run -p 3001:3001 \
+docker run -p 5001:5001 \
   -e GEMINI_API_KEY=xxx \
   -e FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}' \
-  -e FRONTEND_URL=http://localhost \
+  -e FRONTEND_URL=http://localhost:5000 \
   allsports-backend
 ```
 
@@ -210,7 +210,7 @@ docker-compose build --no-cache
 The backend includes a health check endpoint:
 
 ```bash
-curl http://localhost:3001/health
+curl http://localhost:5001/health
 ```
 
 Expected response:

@@ -2,7 +2,7 @@ import { PosterConfig } from "../types";
 import { auth } from "../config/firebase";
 
 // Backend API URL - configured via environment variable
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
 /**
  * Check if we're in development mode
