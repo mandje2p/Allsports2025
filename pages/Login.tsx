@@ -9,7 +9,7 @@ import { StickyHeader } from '../components/StickyHeader';
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { login, loginWithGoogle, loginWithApple, currentUser } = useAuth();
+  const { login, loginWithGoogle, loginWithApple, currentUser, redirectLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,10 +17,10 @@ export const Login: React.FC = () => {
 
   // Redirect to home if user is authenticated
   useEffect(() => {
-    if (currentUser) {
+    if (!redirectLoading && currentUser) {
       navigate('/home', { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, redirectLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +42,12 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
         await loginWithGoogle();
-        navigate('/home');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Google login error:', err);
-        if (err.code !== 'auth/popup-closed-by-user') {
+        if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign in with Google.');
         }
-    } finally {
         setLoading(false);
     }
   };
@@ -58,16 +57,27 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
         await loginWithApple();
-        navigate('/home');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Apple login error:', err);
-        if (err.code !== 'auth/popup-closed-by-user') {
+        if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign in with Apple.');
         }
-    } finally {
         setLoading(false);
     }
   };
+
+  // Show loading state while checking redirect result
+  if (redirectLoading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-gray-900">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-sm">{t('loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full relative flex flex-col overflow-hidden">

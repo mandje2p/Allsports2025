@@ -3,7 +3,8 @@ import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   setPersistence,
@@ -19,6 +20,7 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  redirectLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,6 +41,34 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectLoading, setRedirectLoading] = useState(true);
+  const redirectChecked = useRef(false);
+
+  // Handle redirect result on mount
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      if (redirectChecked.current) return;
+      redirectChecked.current = true;
+
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('Redirect sign-in successful:', result.user.email);
+          setCurrentUser({
+            uid: result.user.uid,
+            email: result.user.email
+          });
+        }
+      } catch (error: any) {
+        console.error('Redirect result error:', error);
+      } finally {
+        setRedirectLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
@@ -67,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithGoogle = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      await signInWithPopup(auth, googleProvider);
+      await signInWithRedirect(auth, googleProvider);
     } catch (error) {
       console.error('Error logging in with Google:', error);
       throw error;
@@ -77,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithApple = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      await signInWithPopup(auth, appleProvider);
+      await signInWithRedirect(auth, appleProvider);
     } catch (error) {
       console.error('Error logging in with Apple:', error);
       throw error;
@@ -91,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const value = {
     currentUser,
     loading,
+    redirectLoading,
     login,
     signup,
     logout,
