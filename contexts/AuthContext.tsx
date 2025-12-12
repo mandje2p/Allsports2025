@@ -7,7 +7,9 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../config/firebase';
 
@@ -67,10 +69,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       redirectChecked.current = true;
       
       try {
+        await setPersistence(auth, browserLocalPersistence);
         const result = await getRedirectResult(auth);
         if (result?.user) {
           console.log('Redirect sign-in successful:', result.user.email);
-          // User is already set by onAuthStateChanged, but we can confirm here
+          setCurrentUser({
+            uid: result.user.uid,
+            email: result.user.email
+          });
         }
       } catch (error: any) {
         console.error('Redirect result error:', error);
@@ -109,23 +115,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const loginWithGoogle = async () => {
-    if (isMobileDevice()) {
-      // Use redirect on mobile - this will navigate away from the page
-      // and return after authentication
-      await signInWithRedirect(auth, googleProvider);
-    } else {
-      // Use popup on desktop
-      await signInWithPopup(auth, googleProvider);
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      if (isMobileDevice()) {
+        // Use redirect on mobile - this will navigate away from the page
+        // and return after authentication
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        // Use popup on desktop
+        await signInWithPopup(auth, googleProvider);
+      }
+    } catch (error) {
+      console.error('Error logging in with Google:', error);
+      throw error;
     }
   };
 
   const loginWithApple = async () => {
-    if (isMobileDevice()) {
-      // Use redirect on mobile
-      await signInWithRedirect(auth, appleProvider);
-    } else {
-      // Use popup on desktop
-      await signInWithPopup(auth, appleProvider);
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      if (isMobileDevice()) {
+        // Use redirect on mobile
+        await signInWithRedirect(auth, appleProvider);
+      } else {
+        // Use popup on desktop
+        await signInWithPopup(auth, appleProvider);
+      }
+    } catch (error) {
+      console.error('Error logging in with Apple:', error);
+      throw error;
     }
   };
 
