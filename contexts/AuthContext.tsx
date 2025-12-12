@@ -3,8 +3,7 @@ import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
   setPersistence,
@@ -20,7 +19,6 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  redirectLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -29,7 +27,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -42,37 +39,6 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [redirectLoading, setRedirectLoading] = useState(true);
-  const redirectChecked = useRef(false);
-
-  // Handle redirect result on mount (for mobile OAuth flow)
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      // Prevent duplicate checks
-      if (redirectChecked.current) return;
-      redirectChecked.current = true;
-      
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          console.log('Redirect sign-in successful:', result.user.email);
-          setCurrentUser({
-            uid: result.user.uid,
-            email: result.user.email
-          });
-        }
-      } catch (error: any) {
-        console.error('Redirect result error:', error);
-        // Common errors: popup_closed_by_user, cancelled_popup_request
-        // These are usually not critical errors
-      } finally {
-        setRedirectLoading(false);
-      }
-    };
-
-    handleRedirectResult();
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
@@ -101,8 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithGoogle = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      // Always use redirect for both desktop and mobile
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error('Error logging in with Google:', error);
       throw error;
@@ -112,8 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithApple = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      // Always use redirect for both desktop and mobile
-      await signInWithRedirect(auth, appleProvider);
+      await signInWithPopup(auth, appleProvider);
     } catch (error) {
       console.error('Error logging in with Apple:', error);
       throw error;
@@ -127,7 +91,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const value = {
     currentUser,
     loading,
-    redirectLoading,
     login,
     signup,
     logout,

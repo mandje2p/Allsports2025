@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { Apple } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { StickyHeader } from '../components/StickyHeader';
@@ -10,18 +9,18 @@ import { StickyHeader } from '../components/StickyHeader';
 export const SignUp: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { signup, loginWithGoogle, loginWithApple, currentUser, redirectLoading } = useAuth();
+  const { signup, loginWithGoogle, loginWithApple, currentUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirect to onboarding if user is authenticated (handles mobile OAuth redirect)
+  // Redirect to onboarding if user is authenticated
   useEffect(() => {
-    if (!redirectLoading && currentUser) {
+    if (currentUser) {
       navigate('/onboarding', { replace: true });
     }
-  }, [currentUser, redirectLoading, navigate]);
+  }, [currentUser, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,13 +42,13 @@ export const SignUp: React.FC = () => {
     setLoading(true);
     try {
         await loginWithGoogle();
-        // Redirect flow will navigate away - navigation happens via useEffect after redirect
+        navigate('/onboarding');
     } catch (err: any) {
         console.error('Google signup error:', err);
-        // Don't show error for redirect flow
-        if (err.code !== 'auth/redirect-cancelled-by-user') {
+        if (err.code !== 'auth/popup-closed-by-user') {
           setError(err.message || 'Failed to sign up with Google.');
         }
+    } finally {
         setLoading(false);
     }
   };
@@ -59,28 +58,16 @@ export const SignUp: React.FC = () => {
     setLoading(true);
     try {
         await loginWithApple();
-        // Redirect flow will navigate away - navigation happens via useEffect after redirect
+        navigate('/onboarding');
     } catch (err: any) {
         console.error('Apple signup error:', err);
-        // Don't show error for redirect flow
-        if (err.code !== 'auth/redirect-cancelled-by-user') {
+        if (err.code !== 'auth/popup-closed-by-user') {
           setError(err.message || 'Failed to sign up with Apple.');
         }
+    } finally {
         setLoading(false);
     }
   };
-
-  // Show loading state while checking redirect result
-  if (redirectLoading) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-gray-900">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-sm">{t('loading') || 'Loading...'}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full w-full relative flex flex-col overflow-hidden">
