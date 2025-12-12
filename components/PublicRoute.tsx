@@ -11,12 +11,16 @@ interface PublicRouteProps {
  * Use this for login, signup, welcome pages
  */
 export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, redirectLoading } = useAuth();
 
-  if (loading) {
+  // Wait for both auth state and redirect result to be resolved
+  if (loading || redirectLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-sm">Loading...</div>
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-sm">Loading...</p>
+        </div>
       </div>
     );
   }
