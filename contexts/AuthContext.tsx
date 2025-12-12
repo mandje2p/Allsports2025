@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 // Mock User Interface
@@ -33,7 +34,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check local storage for a "mock session"
     const storedUser = localStorage.getItem('allsports_mock_user');
     if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+        try {
+            setCurrentUser(JSON.parse(storedUser));
+        } catch (e) {
+            console.error("Failed to parse stored user", e);
+            localStorage.removeItem('allsports_mock_user');
+        }
     }
     setLoading(false);
   }, []);

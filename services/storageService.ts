@@ -25,6 +25,12 @@ const DB_VERSION = 3; // Bump version for new store
 // Helper to open the database
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
+    // Safety check for environments where indexedDB is not available
+    if (typeof indexedDB === 'undefined' || !indexedDB) {
+        reject(new Error("IndexedDB is not supported in this environment"));
+        return;
+    }
+
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
@@ -156,3 +162,4 @@ export const getUserBackgrounds = async (): Promise<UserBackground[]> => {
     return [];
   }
 };
+    
