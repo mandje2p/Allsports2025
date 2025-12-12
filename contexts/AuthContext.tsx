@@ -1,21 +1,49 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
+import { 
+  User as FirebaseUser,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { auth, googleProvider, appleProvider } from '../config/firebase';
 
-// Mock User Interface
 interface User {
-    uid: string;
-    email: string | null;
+  uid: string;
+  email: string | null;
 }
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  login: (email: string) => Promise<void>; // Simplified login
-  signup: (email: string) => Promise<void>; // Simplified signup
+  redirectLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Detect if user is on a mobile device
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  
+  // Check for mobile user agents
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+  
+  // Also check for touch capability and screen size as additional indicators
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 768;
+  
+  return mobileRegex.test(userAgent.toLowerCase()) || (isTouchDevice && isSmallScreen);
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -28,54 +56,97 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectLoading, setRedirectLoading] = useState(true);
+  const redirectChecked = useRef(false);
 
+  // Handle redirect result on mount (for mobile OAuth flow)
   useEffect(() => {
-    // Check local storage for a "mock session"
-    const storedUser = localStorage.getItem('allsports_mock_user');
-    if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const handleRedirectResult = async () => {
+      // Prevent duplicate checks
+      if (redirectChecked.current) return;
+      redirectChecked.current = true;
+      
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('Redirect sign-in successful:', result.user.email);
+          // User is already set by onAuthStateChanged, but we can confirm here
+        }
+      } catch (error: any) {
+        console.error('Redirect result error:', error);
+        // Common errors: popup_closed_by_user, cancelled_popup_request
+        // These are usually not critical errors
+      } finally {
+        setRedirectLoading(false);
+      }
+    };
+
+    handleRedirectResult();
   }, []);
 
-  const login = async (email: string) => {
-     // Mock Login
-     const user = { uid: 'mock-user-123', email };
-     setCurrentUser(user);
-     localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        setCurrentUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email: string) => {
-     // Mock Signup
-     const user = { uid: 'mock-user-123', email };
-     setCurrentUser(user);
-     localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+  const signup = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const loginWithGoogle = async () => {
-      // Mock Google Login
-      const user = { uid: 'mock-google-user', email: 'user@gmail.com' };
-      setCurrentUser(user);
-      localStorage.setItem('allsports_mock_user', JSON.stringify(user));
+    if (isMobileDevice()) {
+      // Use redirect on mobile - this will navigate away from the page
+      // and return after authentication
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      // Use popup on desktop
+      await signInWithPopup(auth, googleProvider);
+    }
+  };
+
+  const loginWithApple = async () => {
+    if (isMobileDevice()) {
+      // Use redirect on mobile
+      await signInWithRedirect(auth, appleProvider);
+    } else {
+      // Use popup on desktop
+      await signInWithPopup(auth, appleProvider);
+    }
   };
 
   const logout = async () => {
-      setCurrentUser(null);
-      localStorage.removeItem('allsports_mock_user');
+    await signOut(auth);
   };
 
   const value = {
     currentUser,
     loading,
+    redirectLoading,
     login,
     signup,
     logout,
-    loginWithGoogle
+    loginWithGoogle,
+    loginWithApple
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -2,13 +2,16 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { Camera, User, Briefcase, MapPin } from 'lucide-react';
+import { Camera, User, Briefcase, MapPin, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StickyHeader } from '../components/StickyHeader';
+import { useAuth } from '../contexts/AuthContext';
+import { saveUserProfile } from '../services/profileService';
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -17,6 +20,8 @@ export const Onboarding: React.FC = () => {
     companyAddress: '',
     avatarUrl: 'https://all-sports.co/app/img/Allsports-logo.png'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -37,14 +42,26 @@ export const Onboarding: React.FC = () => {
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newProfile = {
-        ...formData,
-        email: "user@example.com", 
-        password: "password",
-        subscription: "FREE" 
-    };
-    localStorage.setItem('allsports_user_profile', JSON.stringify(newProfile));
-    navigate('/subscription');
+    setError('');
+    setLoading(true);
+    
+    try {
+      // Save profile to Firestore
+      await saveUserProfile({
+        name: formData.name,
+        companyName: formData.companyName,
+        companyAddress: formData.companyAddress,
+        avatarUrl: formData.avatarUrl,
+        subscription: 'FREE'
+      });
+      
+      navigate('/subscription');
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      setError(err.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,9 +114,27 @@ export const Onboarding: React.FC = () => {
                 </div>
             </div>
 
-            <div className="mt-auto w-full">
-                <Button type="submit" fullWidth className="bg-white text-black font-bold rounded-[30px] py-3 text-sm font-inherit normal-case" style={{ fontFamily: 'inherit' }}>
-                    {t('next')}
+            <div className="mt-auto w-full flex flex-col gap-2">
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-3 text-red-400 text-xs text-center">
+                    {error}
+                  </div>
+                )}
+                <Button 
+                  type="submit" 
+                  fullWidth 
+                  disabled={loading}
+                  className="bg-white text-black font-bold rounded-[30px] py-3 text-sm font-inherit normal-case flex items-center justify-center gap-2 disabled:opacity-50" 
+                  style={{ fontFamily: 'inherit' }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      {t('processing')}
+                    </>
+                  ) : (
+                    t('next')
+                  )}
                 </Button>
             </div>
         </form>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generatePosterImage } from '../services/geminiService';
 import { savePoster, saveUserBackground } from '../services/storageService';
+import { getUserProfile } from '../services/profileService';
 import { Loader2, RefreshCw, Image as ImageIcon, Save, Check } from 'lucide-react';
 import { Match } from '../types';
 import { StickyHeader } from '../components/StickyHeader';
@@ -40,16 +41,32 @@ export const Generator: React.FC = () => {
   const DEFAULT_BACKGROUND = "https://all-sports.co/app/img/bg/foot/standard/bg-standard-1.jpg";
 
   useEffect(() => {
-     const saved = localStorage.getItem('allsports_user_profile');
-     if (saved) {
-         setUserProfile(JSON.parse(saved));
-     } else {
-         setUserProfile({
-             avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
-             companyAddress: "123 Sport Ave, Paris",
-             subscription: "PRO" // Default to PRO to ensure buttons are visible during demo
-         });
-     }
+     const loadUserProfile = async () => {
+         try {
+             const profile = await getUserProfile();
+             if (profile) {
+                 setUserProfile({
+                     avatarUrl: profile.avatarUrl || "https://all-sports.co/app/img/Allsports-logo.png",
+                     companyAddress: profile.companyAddress || "",
+                     subscription: profile.subscription
+                 });
+             } else {
+                 // Fallback to default if no profile exists
+                 setUserProfile({
+                     avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
+                     companyAddress: ""
+                 });
+             }
+         } catch (error) {
+             console.error("Failed to load user profile:", error);
+             // Fallback to default on error
+             setUserProfile({
+                 avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
+                 companyAddress: ""
+             });
+         }
+     };
+     loadUserProfile();
   }, []);
 
   useEffect(() => {
@@ -189,14 +206,41 @@ export const Generator: React.FC = () => {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
-        const timeout = setTimeout(() => { img.src = ""; reject(new Error("Timeout " + src)); }, 10000);
-        img.onload = () => { clearTimeout(timeout); resolve(img); };
-        img.onerror = () => {
-            clearTimeout(timeout);
-            if (src.includes('wsrv.nl') || src.startsWith('data:')) { reject(new Error("Failed " + src)); return; }
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+        const timeout = setTimeout(() => { 
+            img.src = ""; 
+            reject(new Error("Image load timeout: " + src.substring(0, 50))); 
+        }, 20000);
+        
+        // If it's a data URL, Firebase Storage URL, or already proxied, use it directly
+        if (src.startsWith('data:') || 
+            src.includes('firebasestorage.googleapis.com') || 
+            src.includes('wsrv.nl')) {
+            img.onload = () => { 
+                clearTimeout(timeout); 
+                resolve(img); 
+            };
+            img.onerror = () => { 
+                clearTimeout(timeout); 
+                reject(new Error("Failed to load image: " + src.substring(0, 50))); 
+            };
+            img.src = src;
+            return;
+        }
+        
+        // For external URLs (like all-sports.co), use CORS proxy from the start
+        // This avoids CORS errors when drawing to canvas
+        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+        
+        img.onload = () => { 
+            clearTimeout(timeout); 
+            resolve(img); 
         };
-        img.src = src;
+        img.onerror = () => { 
+            clearTimeout(timeout); 
+            reject(new Error("Failed to load image via proxy: " + src.substring(0, 50))); 
+        };
+        
+        img.src = proxyUrl;
     });
   };
 

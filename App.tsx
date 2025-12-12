@@ -2,6 +2,8 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { PublicRoute } from './components/PublicRoute';
 import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
@@ -29,23 +31,25 @@ const App: React.FC = () => {
               {/* Redirect root to Login as requested */}
               <Route path="/" element={<Navigate to="/login" replace />} />
               
-              <Route path="/welcome" element={<Welcome />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/subscription" element={<Subscription />} />
+              {/* Public routes - redirect if authenticated */}
+              <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
               
-              <Route path="/home" element={<Home />} />
-              <Route path="/disciplines" element={<Disciplines />} />
+              {/* Protected routes - require authentication */}
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/disciplines" element={<ProtectedRoute><Disciplines /></ProtectedRoute>} />
               
               {/* Flux de navigation : Competitions -> Calendrier -> Generateur -> Galerie */}
-              <Route path="/competitions/:sportId" element={<Competitions />} />
-              <Route path="/calendar/:leagueId" element={<MatchCalendar />} />
-              <Route path="/generator" element={<Generator />} />
-              <Route path="/backgrounds" element={<BackgroundSelection />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/badges" element={<Badges />} />
+              <Route path="/competitions/:sportId" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+              <Route path="/calendar/:leagueId" element={<ProtectedRoute><MatchCalendar /></ProtectedRoute>} />
+              <Route path="/generator" element={<ProtectedRoute><Generator /></ProtectedRoute>} />
+              <Route path="/backgrounds" element={<ProtectedRoute><BackgroundSelection /></ProtectedRoute>} />
+              <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
               
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

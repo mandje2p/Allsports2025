@@ -1,5 +1,6 @@
 
 import { Match } from "../types";
+import { auth } from "../config/firebase";
 
 // Configuration API
 const BASE_URL = 'https://v3.football.api-sports.io'; 
@@ -44,11 +45,24 @@ export const getLeagueName = (id: string | undefined): string => {
 const matchesCache: Record<string, Match[]> = {};
 
 /**
- * Récupère les matchs pour une ligue sur une large période.
- * Configuré pour la saison 2025 (ou 2026 après Janvier) selon la demande.
- * Récupère dynamiquement les matchs de J à J+30.
+ * Check if user is authenticated before allowing API calls
+ */
+const requireAuth = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required. Please log in to view matches.");
+  }
+  return user;
+};
+
+/**
+ * Récupère les matchs pour une ligue sur une large période (Saison 2025 complète ou partielle)
+ * Permet au frontend de naviguer jour par jour sans spammer l'API.
  */
 export const getMatchesForLeague = async (leagueIdentifier: string): Promise<{ dates: string[], matches: Match[] }> => {
+  // Require authentication
+  requireAuth();
+  
   const leagueId = leagueIdentifier;
   if (!leagueId) return { dates: [], matches: [] };
 
