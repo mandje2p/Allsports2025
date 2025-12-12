@@ -27,21 +27,33 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: players, people on field, athletes, american football, text, watermark, day, match in progress.
       `;
   } else if (style === 'players') {
-      // Style: Joueurs (Specific Request - Updated for Large Figures & Strict Single Ball)
+      // Style: Joueurs (Specific Request - FIFA 25 Cover Style - Real Players - Top Third Framing)
       prompt = `
-        Génère un fond ultra-réaliste pour une affiche de match de football, mettant en scène les deux joueurs les plus connus de l’équipe ${config.teamA} et de l’équipe ${config.teamB} pour la saison 2025/2026.
+        Génère un fond ultra-réaliste pour une affiche de football, avec les deux top players RECONNAISSABLES de l’équipe ${config.teamA} et de l’équipe ${config.teamB} pour la saison 2025/2026.
 
-        Les deux joueurs doivent être représentés en action, en poses dynamiques, avec un rendu photographique très réaliste.
-        IMPORTANT : les joueurs doivent être grands, imposants, bien visibles et occuper une grande partie de la hauteur de l’image, de manière à rester parfaitement lisibles même si des logos viennent se superposer par-dessus dans l’affiche finale.
-        Le joueur de l’équipe A (${config.teamA}) doit être placé à gauche et celui de l’équipe B (${config.teamB}) à droite.
+        Composition obligatoire :
+        – Les joueurs doivent être cadrés très haut dans l’image : leurs têtes, épaules et torses doivent se trouver dans le tiers supérieur de l’image.
+        – Leurs corps ne doivent JAMAIS descendre dans la zone inférieure où les logos seront ajoutés.
+        – L’action doit être dynamique : course, duel, dribble, tir, pression défensive.
+        – Les joueurs doivent être imposants, très visibles, style cinématographique AAA.
 
-        CONTRAINTE CRITIQUE : il doit y avoir EXACTEMENT UN SEUL ballon de football dans toute l'image. Le ballon doit être visible au sol ou en mouvement, mais UNIQUE.
-        Vérifie qu'il n'y a pas de doublons, pas de ballons dans les reflets, pas de ballons en arrière-plan. UN SEUL BALLON.
+        Positionnement :
+        – Joueur star de l’équipe ${config.teamA} à gauche.
+        – Joueur star de l’équipe ${config.teamB} à droite.
+        – Les deux joueurs sont suffisamment hauts et centrés pour qu’aucun logo ne puisse les couvrir.
 
-        Le fond doit inclure un stade légèrement flouté, une atmosphère intense, un éclairage cinématographique.
-        Aucun texte, aucun logo.
-        Format vertical haute résolution, optimisé pour une affiche de match.
-        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, two balls, many balls, extra balls, duplicate balls, flying balls array.
+        Contrainte stricte :
+        – EXACTEMENT un seul ballon visible, au sol ou légèrement devant eux, jamais plus d’un.
+
+        Arrière-plan :
+        – Stade moderne légèrement flou, lumières fortes, ambiance match-night premium.
+        – Effets lumineux discrets pour renforcer l’intensité.
+
+        Style :
+        – Ultra réaliste, détaillé, proche d’une affiche FIFA 25 ou EA Sports FC.
+        – Aucun texte, aucun logo.
+        – Format vertical haute résolution.
+        Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, two balls, many balls, extra balls, duplicate balls, flying balls array, full body shot, distant figures, wide shot, small figures, generic players, players in lower half.
       `;
   } else if (style === 'abstract') {
       // Style: Abstrait (Specific Request)
