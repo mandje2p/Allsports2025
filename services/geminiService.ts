@@ -2,19 +2,43 @@
 import { GoogleGenAI } from "@google/genai";
 import { PosterConfig } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Lazy initialization singleton to prevent startup crashes
+let aiInstance: GoogleGenAI | null = null;
+
+const getAIClient = (): GoogleGenAI => {
+  if (!aiInstance) {
+    const apiKey = process.env.API_KEY;
+    
+    if (!apiKey) {
+       console.error("API Key is missing. Please check your .env file or build configuration.");
+       throw new Error("Service unavailable: API Key configuration missing.");
+    }
+    
+    try {
+        aiInstance = new GoogleGenAI({ apiKey });
+    } catch (error) {
+        console.error("Failed to initialize GoogleGenAI:", error);
+        throw new Error("Failed to initialize AI client");
+    }
+  }
+  return aiInstance;
+};
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const generatePosterImage = async (config: PosterConfig, style: 'stadium' | 'players' | 'abstract' | 'prestige' = 'stadium'): Promise<string> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
+  // Ensure client is initialized only when needed
+  let ai: GoogleGenAI;
+  try {
+      ai = getAIClient();
+  } catch (e: any) {
+      console.error(e);
+      throw new Error(e.message || "AI Service unavailable");
   }
 
   let prompt = "";
   
   if (style === 'stadium') {
-      // Style: Stadium Only (Night, No Players)
       prompt = `
         Generate a vertical (9:16) photorealistic image of a majestic soccer stadium at night.
         CRITICAL: The pitch must be COMPLETELY EMPTY. NO PLAYERS, NO REFEREES, NO PEOPLE on the green grass.
@@ -27,28 +51,22 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: players, people on field, athletes, american football, text, watermark, day, match in progress.
       `;
   } else if (style === 'players') {
-      // Style: Joueurs (Specific Request - FIFA 25 Cover Style - Real Players - Top Third Framing)
       prompt = `
         Génère un fond ultra-réaliste pour une affiche de football, avec les deux top players RECONNAISSABLES de l’équipe ${config.teamA} et de l’équipe ${config.teamB} pour la saison 2025/2026.
-
         Composition obligatoire :
         – Les joueurs doivent être cadrés très haut dans l’image : leurs têtes, épaules et torses doivent se trouver dans le tiers supérieur de l’image.
         – Leurs corps ne doivent JAMAIS descendre dans la zone inférieure où les logos seront ajoutés.
         – L’action doit être dynamique : course, duel, dribble, tir, pression défensive.
         – Les joueurs doivent être imposants, très visibles, style cinématographique AAA.
-
         Positionnement :
         – Joueur star de l’équipe ${config.teamA} à gauche.
         – Joueur star de l’équipe ${config.teamB} à droite.
         – Les deux joueurs sont suffisamment hauts et centrés pour qu’aucun logo ne puisse les couvrir.
-
         Contrainte stricte :
         – EXACTEMENT un seul ballon visible, au sol ou légèrement devant eux, jamais plus d’un.
-
         Arrière-plan :
         – Stade moderne légèrement flou, lumières fortes, ambiance match-night premium.
         – Effets lumineux discrets pour renforcer l’intensité.
-
         Style :
         – Ultra réaliste, détaillé, proche d’une affiche FIFA 25 ou EA Sports FC.
         – Aucun texte, aucun logo.
@@ -56,7 +74,6 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: text, typography, letters, words, watermark, american football, rugby, helmet, shoulder pads, distorted faces, bad anatomy, cartoon, illustration, drawing, painting, grid, multiple balls, two balls, many balls, extra balls, duplicate balls, flying balls array, full body shot, distant figures, wide shot, small figures, generic players, players in lower half.
       `;
   } else if (style === 'abstract') {
-      // Style: Abstrait (Specific Request)
       prompt = `
         Crée un fond abstrait pour une affiche de football, inspiré des visuels sportifs modernes.
         Utilise uniquement un mélange artistique des deux couleurs principales des équipes du match (${config.teamA} vs ${config.teamB}).
@@ -67,7 +84,6 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         Negative prompt: players, people, ball, stadium, grass, text, typography, letters, words, watermark, realistic figures.
       `;
   } else if (style === 'prestige') {
-      // Style: Prestige (Specific Request)
       prompt = `
         Génère un fond extrêmement élégant et premium pour une affiche de football prestige.
         Palette uniquement noire et or, avec un rendu luxueux, sobre, moderne et haut de gamme.
@@ -86,7 +102,6 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
     try {
       console.log(`Generating with style: ${style} (Attempt ${retryCount + 1})`);
       
-      // Using gemini-2.5-flash-image which is optimized for image generation
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image', 
         contents: {
@@ -110,7 +125,6 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
         }
       }
 
-      // Check for refusal/text only response
       const textPart = parts?.find(p => p.text);
       if (textPart) {
           console.warn("Gemini Refusal/Text:", textPart.text);
@@ -122,10 +136,9 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
     } catch (error: any) {
       console.error("Gemini Image Generation Error:", error);
 
-      // Handle Rate Limits (429)
       if (error.message?.includes('429') || error.status === 429 || error.code === 429 || error.status === 'RESOURCE_EXHAUSTED') {
          if (retryCount < maxRetries) {
-             const delay = (retryCount + 1) * 5000; // 5s, 10s, 15s
+             const delay = (retryCount + 1) * 5000;
              console.warn(`Rate limit hit. Retrying in ${delay}ms...`);
              await wait(delay);
              retryCount++;
@@ -134,9 +147,9 @@ export const generatePosterImage = async (config: PosterConfig, style: 'stadium'
              throw new Error("Quota exceeded. Please try fewer matches or wait a minute.");
          }
       }
-      
       throw error;
     }
   }
   throw new Error("Failed to generate image after retries.");
 };
+    

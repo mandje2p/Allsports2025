@@ -48,13 +48,14 @@ export const Login: React.FC = () => {
         <img 
           src="https://2points.fr/wp-content/uploads/2025/12/Login.png" 
           alt="Login Background" 
-          className="w-full h-full object-cover brightness-[0.6]"
+          className="w-full h-full object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.backgroundColor = '#1a1a1a'; // Fallback color
           }}
         />
-         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+         {/* Very subtle gradient only at the bottom for readability */}
+         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
       </div>
 
       <div className="relative z-20 flex-1 flex flex-col px-6 pt-0 pb-12">
