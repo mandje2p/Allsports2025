@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, X, Loader2 } from 'lucide-react';
+import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, X, Loader2, Zap } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getUserProfile, saveUserProfile, changeUserPassword, UserProfile as FirestoreProfile } from '../services/profileService';
 import { auth } from '../config/firebase';
@@ -219,14 +219,6 @@ export const Profile: React.FC = () => {
                   >
                     {profile.name || 'Utilisateur'}
                   </h2>
-                  
-                  {/* Credits Indicator */}
-                  <div className="flex items-center gap-2 mt-1 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                      <Zap size={10} className="text-yellow-400 fill-yellow-400" />
-                      <span className="text-[10px] font-bold text-gray-300 font-['Syne'] uppercase">
-                          {credits}/100 CREDITS RESTANTS
-                      </span>
-                  </div>
               </div>
 
               {/* Company & Details - Centered List */}

@@ -16,7 +16,7 @@ router.use(authMiddleware);
  * POST /api/gemini/generate-match-background
  * Generate a match poster background using Gemini AI
  *
- * Body: { homeTeam: string, awayTeam: string, style: 'stadium' | 'players' }
+ * Body: { homeTeam: string, awayTeam: string, style: 'stadium' | 'players' | 'abstract' | 'prestige' }
  */
 router.post(
   '/generate-match-background',
@@ -33,10 +33,10 @@ router.post(
         return;
       }
 
-      if (style && !['stadium', 'players'].includes(style)) {
+      if (style && !['stadium', 'players', 'abstract', 'prestige'].includes(style)) {
         res.status(400).json({
           success: false,
-          error: 'Invalid style. Must be "stadium" or "players"',
+          error: 'Invalid style. Must be "stadium", "players", "abstract", or "prestige"',
         });
         return;
       }

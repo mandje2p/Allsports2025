@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
+import { InstallPWABanner } from './components/InstallPWABanner';
 import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
       <LanguageProvider>
         <HashRouter>
           <Layout>
+            <InstallPWABanner />
             <Routes>
               {/* Redirect root to Login as requested */}
               <Route path="/" element={<Navigate to="/login" replace />} />

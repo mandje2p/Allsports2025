@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 5001;
 
 // CORS configuration - allow requests from multiple origins
 const allowedOrigins = [
+  'http://localhost:3000',
   'http://localhost:5004',
   'http://localhost:5173',
   'https://allplayers.sedx3d.com',
