@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
-import { 
+import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signOut,
@@ -31,21 +30,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Detect if user is on a mobile device
-const isMobileDevice = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-  
-  // Check for mobile user agents
-  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
-  
-  // Also check for touch capability and screen size as additional indicators
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const isSmallScreen = window.innerWidth <= 768;
-  
-  return mobileRegex.test(userAgent.toLowerCase()) || (isTouchDevice && isSmallScreen);
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -117,14 +101,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithGoogle = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      if (isMobileDevice()) {
-        // Use redirect on mobile - this will navigate away from the page
-        // and return after authentication
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        // Use popup on desktop
-        await signInWithPopup(auth, googleProvider);
-      }
+      // Always use redirect for both desktop and mobile
+      await signInWithRedirect(auth, googleProvider);
     } catch (error) {
       console.error('Error logging in with Google:', error);
       throw error;
@@ -134,13 +112,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithApple = async () => {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      if (isMobileDevice()) {
-        // Use redirect on mobile
-        await signInWithRedirect(auth, appleProvider);
-      } else {
-        // Use popup on desktop
-        await signInWithPopup(auth, appleProvider);
-      }
+      // Always use redirect for both desktop and mobile
+      await signInWithRedirect(auth, appleProvider);
     } catch (error) {
       console.error('Error logging in with Apple:', error);
       throw error;

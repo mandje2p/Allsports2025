@@ -43,16 +43,13 @@ export const SignUp: React.FC = () => {
     setLoading(true);
     try {
         await loginWithGoogle();
-        // On desktop, popup resolves with user - navigate to onboarding
-        // On mobile, this redirects away - navigation happens via useEffect after redirect
-        navigate('/onboarding');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Google signup error:', err);
         // Don't show error for redirect flow
         if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign up with Google.');
         }
-    } finally {
         setLoading(false);
     }
   };
@@ -62,16 +59,13 @@ export const SignUp: React.FC = () => {
     setLoading(true);
     try {
         await loginWithApple();
-        // On desktop, popup resolves with user - navigate to onboarding
-        // On mobile, this redirects away - navigation happens via useEffect after redirect
-        navigate('/onboarding');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Apple signup error:', err);
         // Don't show error for redirect flow
         if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign up with Apple.');
         }
-    } finally {
         setLoading(false);
     }
   };

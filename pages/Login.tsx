@@ -43,16 +43,13 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
         await loginWithGoogle();
-        // On desktop, popup resolves with user - navigate to home
-        // On mobile, this redirects away - navigation happens via useEffect after redirect
-        navigate('/home');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Google login error:', err);
         // Don't show error for redirect flow (it throws but user is navigating away)
         if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign in with Google.');
         }
-    } finally {
         setLoading(false);
     }
   };
@@ -62,16 +59,13 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
         await loginWithApple();
-        // On desktop, popup resolves with user - navigate to home
-        // On mobile, this redirects away - navigation happens via useEffect after redirect
-        navigate('/home');
+        // Redirect flow will navigate away - navigation happens via useEffect after redirect
     } catch (err: any) {
         console.error('Apple login error:', err);
         // Don't show error for redirect flow
         if (err.code !== 'auth/redirect-cancelled-by-user') {
           setError(err.message || 'Failed to sign in with Apple.');
         }
-    } finally {
         setLoading(false);
     }
   };
