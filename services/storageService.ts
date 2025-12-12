@@ -347,13 +347,6 @@ export const deletePoster = async (id: string): Promise<void> => {
   }
 };
 
-<<<<<<< HEAD
-    return new Promise((resolve, reject) => {
-      const request = store.delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      request.onerror = () => reject(request.error);
-=======
 /**
  * Clean up expired posters (optional - can be called periodically)
  * This function deletes all posters where the match date has passed

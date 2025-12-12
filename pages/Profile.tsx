@@ -344,10 +344,7 @@ export const Profile: React.FC = () => {
                      </div>
                 </div>
 
-<<<<<<< HEAD
                 {/* Stat Card 3: Fav Club - Full fill, no padding, no background ring */}
-=======
->>>>>>> dev
                 <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
                      <div className="w-10 h-10 rounded-full overflow-hidden">
                         <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-cover" />
