@@ -118,8 +118,39 @@ export const deletePoster = async (id: string): Promise<void> => {
 
 // --- User Backgrounds Functions ---
 
+export const getUserBackgrounds = async (): Promise<UserBackground[]> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(BG_STORE_NAME, 'readonly');
+    const store = tx.objectStore(BG_STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const results = request.result as UserBackground[];
+        results.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error("IndexedDB Read BG Error:", error);
+    return [];
+  }
+};
+
 export const saveUserBackground = async (imageUrl: string): Promise<void> => {
   try {
+    // 1. Check for duplicates first
+    const existingBackgrounds = await getUserBackgrounds();
+    const isDuplicate = existingBackgrounds.some(bg => bg.imageUrl === imageUrl);
+    
+    if (isDuplicate) {
+        console.log("Background already exists, skipping save.");
+        return Promise.resolve();
+    }
+
+    // 2. Proceed to save if unique
     const db = await openDB();
     const tx = db.transaction(BG_STORE_NAME, 'readwrite');
     const store = tx.objectStore(BG_STORE_NAME);
@@ -141,25 +172,3 @@ export const saveUserBackground = async (imageUrl: string): Promise<void> => {
     throw new Error("Failed to save background.");
   }
 };
-
-export const getUserBackgrounds = async (): Promise<UserBackground[]> => {
-  try {
-    const db = await openDB();
-    const tx = db.transaction(BG_STORE_NAME, 'readonly');
-    const store = tx.objectStore(BG_STORE_NAME);
-
-    return new Promise((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const results = request.result as UserBackground[];
-        results.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        resolve(results);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  } catch (error) {
-    console.error("IndexedDB Read BG Error:", error);
-    return [];
-  }
-};
-    

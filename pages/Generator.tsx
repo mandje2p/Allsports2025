@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generatePosterImage } from '../services/geminiService';
 import { savePoster, saveUserBackground } from '../services/storageService';
-import { Loader2, RefreshCw, Image as ImageIcon, Save, Check } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Save, Check } from 'lucide-react';
 import { Match } from '../types';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -174,12 +174,7 @@ export const Generator: React.FC = () => {
       try {
           await saveUserBackground(bgUrl);
           setSavedStates(prev => ({ ...prev, [index]: true }));
-          
-          // Optional: Revert back to button after 3 seconds
-          setTimeout(() => {
-              setSavedStates(prev => ({ ...prev, [index]: false }));
-          }, 3000);
-          
+          // Note: Timeout removed to keep the button in "Saved" state to prevent duplicates
       } catch (e) {
           console.error("Failed to save background", e);
       }
@@ -526,7 +521,7 @@ export const Generator: React.FC = () => {
                              isSaved ? (
                                 <div className="absolute top-4 right-4 z-50 bg-white text-black px-3 py-1.5 rounded-[30px] shadow-lg flex items-center gap-1 animate-in fade-in zoom-in duration-200">
                                      <Check size={12} strokeWidth={3} />
-                                     <span className="text-[9px] font-bold font-['Syne'] uppercase">FOND D'ÉCRAN SAUVEGARDÉ !</span>
+                                     <span className="text-[9px] font-bold font-['Syne'] uppercase">{t('msg_bg_saved')}</span>
                                 </div>
                              ) : (
                                 <button
