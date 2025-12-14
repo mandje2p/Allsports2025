@@ -94,7 +94,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     onboarding_title: "Configuration",
     onboarding_subtitle: "Complétez votre profil pour personnaliser vos visuels.",
-    onboarding_btn_finish: "Terminar",
+    onboarding_btn_finish: "Terminer",
     onboarding_upload_logo: "Ajouter votre logo",
 
     // Subscription
@@ -127,6 +127,21 @@ const translations: Record<Language, Record<string, string>> = {
     cat_my_gallery: "Ma Galerie",
     gallery_bg_empty: "Aucun fond sauvegardé",
 
+    // Generator Translations
+    gen_btn_background: "ARRIÈRE-PLAN",
+    gen_btn_ai: "GÉNÉRER AVEC IA",
+    gen_btn_regenerate: "RÉGÉNÉRER",
+    gen_label_style: "STYLE :",
+    gen_style_stadium: "STADE",
+    gen_style_players: "JOUEURS",
+    gen_style_abstract: "ABSTRAIT",
+    gen_style_prestige: "PRESTIGE",
+    gen_badge_program: "PROGRAMME",
+    msg_bg_saved: "FOND D'ÉCRAN SAUVEGARDÉ !",
+    msg_poster_saved: "AFFICHE SAUVEGARDÉE !",
+    error_generation_failed: "La génération a échoué.",
+    error_save_failed: "Sauvegarde impossible ! Espace plein.",
+
     // Modals
     modal_format_title: "TYPE D'AFFICHE",
     modal_format_subtitle: "Vous avez sélectionné MATCH_COUNT matchs sur la même date.",
@@ -140,7 +155,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     loading: "Chargement...",
-    save: "Enregistrer",
+    save: "SAVE", // "sauf le SAVE" requested by user
     btn_save_bg: "SAUVEGARDER BG",
     next: "Suivant",
     processing: "Traitement",
@@ -255,6 +270,21 @@ const translations: Record<Language, Record<string, string>> = {
     cat_my_gallery: "My Gallery",
     gallery_bg_empty: "No saved backgrounds",
 
+    // Generator Translations
+    gen_btn_background: "BACKGROUND",
+    gen_btn_ai: "GENERATE AI",
+    gen_btn_regenerate: "REGENERATE",
+    gen_label_style: "STYLE:",
+    gen_style_stadium: "STADIUM",
+    gen_style_players: "PLAYERS",
+    gen_style_abstract: "ABSTRACT",
+    gen_style_prestige: "PRESTIGE",
+    gen_badge_program: "PROGRAM",
+    msg_bg_saved: "WALLPAPER SAVED!",
+    msg_poster_saved: "POSTER SAVED!",
+    error_generation_failed: "Generation failed.",
+    error_save_failed: "Save failed! Storage full.",
+
     // Modals
     modal_format_title: "POSTER TYPE",
     modal_format_subtitle: "You selected MATCH_COUNT matches on the same date.",
@@ -267,7 +297,7 @@ const translations: Record<Language, Record<string, string>> = {
     modal_delete_subtitle: "This action is permanent.",
 
     loading: "Loading...",
-    save: "Save",
+    save: "SAVE", // "sauf le SAVE" requested by user
     btn_save_bg: "SAVE BG",
     next: "Next",
     processing: "Processing",
@@ -382,6 +412,21 @@ const translations: Record<Language, Record<string, string>> = {
     cat_my_gallery: "Mi Galería",
     gallery_bg_empty: "Sin fondos guardados",
 
+    // Generator Translations
+    gen_btn_background: "FONDO",
+    gen_btn_ai: "GENERAR IA",
+    gen_btn_regenerate: "REGENERAR",
+    gen_label_style: "ESTILO:",
+    gen_style_stadium: "ESTADIO",
+    gen_style_players: "JUGADORES",
+    gen_style_abstract: "ABSTRACTO",
+    gen_style_prestige: "PRESTIGIO",
+    gen_badge_program: "PROGRAMA",
+    msg_bg_saved: "¡FONDO GUARDADO!",
+    msg_poster_saved: "¡PÓSTER GUARDADO!",
+    error_generation_failed: "La generación falló.",
+    error_save_failed: "¡Error al guardar! Almacenamiento lleno.",
+
     // Modals
     modal_format_title: "TIPO DE PÓSTER",
     modal_format_subtitle: "Has seleccionado MATCH_COUNT partidos en la misma fecha.",
@@ -394,7 +439,7 @@ const translations: Record<Language, Record<string, string>> = {
     modal_delete_subtitle: "Esta acción es definitiva.",
 
     loading: "Cargando...",
-    save: "Guardar",
+    save: "SAVE", // "sauf le SAVE" requested by user
     btn_save_bg: "GUARDAR BG",
     next: "Siguiente",
     processing: "Procesando",
