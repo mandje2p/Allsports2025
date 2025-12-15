@@ -20,8 +20,7 @@ dist-ssr
 .env
 .env.local
 .env.*
-
-.env.example
+!.env.example
 
 # Private keys and sensitive files
 backend/private-key.json

@@ -123,6 +123,9 @@ const translations: Record<Language, Record<string, string>> = {
     feat_early_access: "Accès anticipé des compétitions",
     feat_support: "Service client express",
     feat_support_std: "Service client standard",
+    plan_basic_credits: "50 crédits",
+    plan_pro_credits: "100 crédits",
+    plan_premium_credits: "200 crédits",
 
     // Background Selection
     cat_my_gallery: "Ma Galerie",
@@ -267,6 +270,9 @@ const translations: Record<Language, Record<string, string>> = {
     feat_early_access: "Early access to competitions",
     feat_support: "Express customer support",
     feat_support_std: "Standard customer support",
+    plan_basic_credits: "50 credits",
+    plan_pro_credits: "100 credits",
+    plan_premium_credits: "200 credits",
 
     // Background Selection
     cat_my_gallery: "My Gallery",
@@ -410,6 +416,9 @@ const translations: Record<Language, Record<string, string>> = {
     feat_early_access: "Acceso anticipado a competiciones",
     feat_support: "Servicio al cliente express",
     feat_support_std: "Servicio al cliente estándar",
+    plan_basic_credits: "50 créditos",
+    plan_pro_credits: "100 créditos",
+    plan_premium_credits: "200 créditos",
 
     // Background Selection
     cat_my_gallery: "Mi Galería",

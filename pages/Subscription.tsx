@@ -82,6 +82,7 @@ export const Subscription: React.FC = () => {
         price: '70€',
         periodKey: 'plan_basic_period',
         subKey: 'plan_basic_sub',
+        creditsKey: 'plan_basic_credits',
         features: [
             'feat_unlimited_visuals',
             'feat_100_bg',
@@ -95,6 +96,7 @@ export const Subscription: React.FC = () => {
         price: '60€',
         periodKey: 'plan_pro_period',
         subKey: 'plan_pro_sub',
+        creditsKey: 'plan_pro_credits',
         features: [
             'feat_unlimited_visuals',
             'feat_100_bg',
@@ -108,6 +110,7 @@ export const Subscription: React.FC = () => {
         price: '598€',
         periodKey: 'plan_premium_period',
         subKey: 'plan_premium_sub',
+        creditsKey: 'plan_premium_credits',
         features: [
             'feat_unlimited_visuals',
             'feat_100_bg',
@@ -250,6 +253,11 @@ export const Subscription: React.FC = () => {
                             {plan.subKey && (
                                 <span className={`text-[10px] block mt-1 ${selectedPlan === plan.id ? 'text-gray-500' : 'text-gray-400'}`}>
                                     {t(plan.subKey)}
+                                </span>
+                            )}
+                            {plan.creditsKey && (
+                                <span className={`text-sm font-bold block mt-2 ${selectedPlan === plan.id ? 'text-black' : 'text-white'}`}>
+                                    {t(plan.creditsKey)}
                                 </span>
                             )}
                         </div>
