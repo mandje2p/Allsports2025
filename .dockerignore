@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist
+dist-ssr
+build
+*.local
+
+# Environment files (will be mounted as volumes)
+.env
+.env.local
+.env.production
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (don't copy into image)
+docker-compose.yml
+Dockerfile*
+.dockerignore
+
+# Logs
+logs
+*.log
+
+# Test files
+coverage
+.nyc_output
+
+# Misc
+.cache
+.temp
+tmp
+

@@ -1,0 +1,58 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:5001}
+        - VITE_STRIPE_PRICE_BASIC=${VITE_STRIPE_PRICE_BASIC:-}
+        - VITE_STRIPE_PRICE_PRO=${VITE_STRIPE_PRICE_PRO:-}
+        - VITE_STRIPE_PRICE_PREMIUM=${VITE_STRIPE_PRICE_PREMIUM:-}
+        - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY:-}
+        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-}
+        - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-}
+        - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-}
+        - VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET:-}
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
+        - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID:-}
+    container_name: allsports-frontend
+    ports:
+      - "5004:5004"
+    restart: unless-stopped
+    networks:
+      - allsports-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: allsports-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - NODE_ENV=${NODE_ENV:-production}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5004}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5004}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-}
+    env_file:
+      - .env
+    volumes:
+      # Mount Firebase private key (make sure it exists)
+      - ./backend/private-key.json:/app/private-key.json:ro
+      # Mount .env file (backend reads from ../.env, so mount at root)
+      # Since backend/index.js is at /app/index.js, it looks for /app/../.env = /.env
+      - ./.env:/.env:ro
+    restart: unless-stopped
+    networks:
+      - allsports-network
+
+networks:
+  allsports-network:
+    driver: bridge
+
