@@ -23,6 +23,10 @@ dist-ssr
 
 .env.example
 
+# Private keys and sensitive files
+backend/private-key.json
+**/private-key.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
