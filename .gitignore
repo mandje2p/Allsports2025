@@ -27,6 +27,9 @@ dist-ssr
 backend/private-key.json
 **/private-key.json
 
+# Credentials documentation (may contain example keys)
+STRIPE_CREDENTIALS.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
