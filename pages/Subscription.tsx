@@ -1,15 +1,67 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { ShieldCheck, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StickyHeader } from '../components/StickyHeader';
+import { useAuth } from '../contexts/AuthContext';
+import { createCheckoutSession, syncSubscription } from '../services/subscriptionService';
 
 export const Subscription: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useLanguage();
+  const { getIdToken, currentUser } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<string>('basic');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Check for success/cancel from Stripe redirect
+  React.useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    
+    if (success) {
+      console.log('[FRONTEND] [SUBSCRIPTION] ✅ Checkout successful! Starting sync process...');
+      // Subscription successful - sync subscription immediately to ensure plan and credits are updated
+      const syncAndRedirect = async () => {
+        try {
+          setLoading(true);
+          console.log('[FRONTEND] [SUBSCRIPTION] 🔄 Calling syncSubscription...');
+          await syncSubscription(getIdToken);
+          console.log('[FRONTEND] [SUBSCRIPTION] ✅ Subscription synced successfully after checkout');
+          // Redirect to home after sync
+          console.log('[FRONTEND] [SUBSCRIPTION] 🏠 Redirecting to home in 1 second...');
+          setTimeout(() => {
+            navigate('/home');
+          }, 1000);
+        } catch (err: any) {
+          console.error('[FRONTEND] [SUBSCRIPTION] ❌ Error syncing subscription:', err);
+          // Still redirect even if sync fails (webhook will handle it)
+          console.log('[FRONTEND] [SUBSCRIPTION] ⚠️ Sync failed, but redirecting anyway (webhook will handle update)');
+          setTimeout(() => {
+            navigate('/home');
+          }, 2000);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      syncAndRedirect();
+    } else if (canceled) {
+      console.log('[FRONTEND] [SUBSCRIPTION] ❌ Checkout was canceled');
+      setError('Subscription canceled');
+    }
+  }, [searchParams, navigate, getIdToken]);
+
+  // Stripe Price IDs - These should match your Stripe Dashboard
+  // Get from environment variables (required!)
+  const STRIPE_PRICE_IDS = {
+    basic: import.meta.env.VITE_STRIPE_PRICE_BASIC,
+    pro: import.meta.env.VITE_STRIPE_PRICE_PRO,
+    premium: import.meta.env.VITE_STRIPE_PRICE_PREMIUM,
+  };
 
   const PLANS = [
     {
@@ -65,11 +117,104 @@ export const Subscription: React.FC = () => {
     }
   ];
 
-  const handleSubscribe = () => {
-    if (selectedPlan !== 'free') {
-        window.open('https://stripe.com', '_blank');
+  const handleSubscribe = async () => {
+    if (selectedPlan === 'free') {
+      // Set user subscription to FREE in database
+      if (!currentUser) {
+        setError('Please sign in to continue');
+        navigate('/login');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const idToken = await getIdToken();
+        if (!idToken) {
+          throw new Error('Unable to get authentication token');
+        }
+
+        // Update user profile to FREE plan
+        const { profileService } = await import('../services/profileService');
+        const currentProfile = await profileService.getProfile(currentUser.uid, idToken);
+        
+        await profileService.saveProfile(currentUser.uid, idToken, {
+          ...(currentProfile || {
+            name: currentUser.displayName || 'User',
+            email: currentUser.email || '',
+            companyName: '',
+            companyAddress: '',
+            avatarUrl: currentUser.photoURL || '',
+          }),
+          subscription: 'FREE'
+        });
+
+        // Also update subscription collection via backend endpoint
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+        const response = await fetch(`${API_BASE_URL}/api/subscriptions/set-free`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.message || errorData.error || 'Failed to set FREE plan');
+        }
+
+        // Navigate to home
+        navigate('/home');
+      } catch (err: any) {
+        console.error('[SUBSCRIPTION] Error setting FREE plan:', err);
+        setError(err.message || 'Failed to set free plan. Please try again.');
+        setLoading(false);
+      }
+      return;
     }
-    navigate('/home');
+
+    if (!currentUser) {
+      setError('Please sign in to subscribe');
+      navigate('/login');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Map plan ID to Stripe plan name and price ID
+      const planMap: Record<string, { plan: 'BASIC' | 'PRO' | 'PREMIUM', priceId: string }> = {
+        basic: { plan: 'BASIC', priceId: STRIPE_PRICE_IDS.basic },
+        pro: { plan: 'PRO', priceId: STRIPE_PRICE_IDS.pro },
+        premium: { plan: 'PREMIUM', priceId: STRIPE_PRICE_IDS.premium },
+      };
+
+      const { plan, priceId } = planMap[selectedPlan];
+      
+      console.log('[FRONTEND] [SUBSCRIPTION] 🎯 User selected plan:', { selectedPlan, plan, priceId });
+      
+      if (!priceId || !priceId.startsWith('price_')) {
+        throw new Error('Stripe Price ID not configured. Please:\n1. Create products in Stripe Dashboard\n2. Copy the Price IDs (starts with price_)\n3. Add them to your .env file:\n   VITE_STRIPE_PRICE_BASIC=price_...\n   VITE_STRIPE_PRICE_PRO=price_...\n   VITE_STRIPE_PRICE_PREMIUM=price_...\n4. Restart your frontend server');
+      }
+
+      // Create checkout session
+      console.log('[FRONTEND] [SUBSCRIPTION] 🚀 Initiating checkout for plan:', plan);
+      const { url } = await createCheckoutSession(plan, priceId, getIdToken);
+      
+      // Redirect to Stripe Checkout
+      if (url) {
+        console.log('[FRONTEND] [SUBSCRIPTION] 🔀 Redirecting to Stripe Checkout...');
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (err: any) {
+      console.error('[SUBSCRIPTION] Error creating checkout:', err);
+      setError(err.message || 'Failed to start checkout. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,13 +276,25 @@ export const Subscription: React.FC = () => {
         </div>
 
         <div className="mt-auto w-full space-y-4">
+            {error && (
+                <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 text-sm text-red-300">
+                    {error}
+                </div>
+            )}
+            
             <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500">
                 <ShieldCheck size={12} />
                 <span>Paiement sécurisé via Stripe</span>
             </div>
             
-            <Button onClick={handleSubscribe} fullWidth className="bg-white text-black font-bold rounded-[30px] py-4 text-sm font-['Syne'] normal-case tracking-wider font-inherit" style={{ fontFamily: 'inherit' }}>
-                Souscrire (Testez 14 Jours)
+            <Button 
+                onClick={handleSubscribe} 
+                disabled={loading}
+                fullWidth 
+                className="bg-white text-black font-bold rounded-[30px] py-4 text-sm font-['Syne'] normal-case tracking-wider font-inherit disabled:opacity-50 disabled:cursor-not-allowed" 
+                style={{ fontFamily: 'inherit' }}
+            >
+                {loading ? 'Chargement...' : selectedPlan === 'free' ? 'Continuer avec le plan gratuit' : 'Souscrire'}
             </Button>
         </div>
       </div>

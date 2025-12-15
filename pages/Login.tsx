@@ -8,9 +8,14 @@ import { StickyHeader } from '../components/StickyHeader';
 import { Apple } from 'lucide-react';
 
 export const Login: React.FC = () => {
+  console.log('[LOGIN] Login component rendered');
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { login, loginWithGoogle } = useAuth();
+  console.log('[LOGIN] Auth functions available:', {
+    hasLogin: !!login,
+    hasLoginWithGoogle: !!loginWithGoogle
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,21 +26,50 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-        await login(email);
+        await login(email, password);
         navigate('/home');
     } catch (err: any) {
-        setError('Failed to log in');
+        setError(err.message || 'Failed to log in');
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-        await loginWithGoogle();
-        navigate('/home');
-    } catch (err) {
-        console.error(err);
+  const handleGoogleLogin = async (e?: React.MouseEvent) => {
+    console.log('[LOGIN] ========== Google login button clicked ==========');
+    console.log('[LOGIN] Event:', e ? 'Present' : 'Not provided');
+    console.log('[LOGIN] loginWithGoogle function:', typeof loginWithGoogle);
+    
+    if (!loginWithGoogle) {
+      console.error('[LOGIN] ✗ loginWithGoogle function is not available!');
+      setError('Authentication service not available');
+      return;
     }
+    
+    setError('');
+    setLoading(true);
+    console.log('[LOGIN] Loading state set to true');
+    
+    try {
+        console.log('[LOGIN] Calling loginWithGoogle from AuthContext...');
+        await loginWithGoogle();
+        console.log('[LOGIN] ✓ loginWithGoogle completed - user authenticated');
+        console.log('[LOGIN] Navigating to /home');
+        navigate('/home');
+    } catch (err: any) {
+        console.error('[LOGIN] ✗ Error in handleGoogleLogin:', err);
+        console.error('[LOGIN] Error details:', {
+          code: err?.code,
+          message: err?.message,
+          stack: err?.stack,
+          name: err?.name
+        });
+        setError(err.message || 'Failed to sign in with Google');
+        setLoading(false);
+        console.log('[LOGIN] ============================================');
+    }
+    // Note: setLoading(false) is intentionally not in finally block
+    // because if redirect happens, this code won't execute
   };
 
   return (
@@ -97,7 +131,13 @@ export const Login: React.FC = () => {
           <div className="flex flex-col gap-2 mt-0">
              {/* Apple Button */}
              <button 
-                onClick={handleGoogleLogin} 
+                onClick={(e) => {
+                  console.log('[LOGIN] Apple button onClick event fired (also uses Google auth)');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleGoogleLogin(e);
+                }}
+                type="button"
                 className="w-full bg-black border border-white/20 rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
              >
                 <img src="https://all-sports.co/app/img/login/apple.png" alt="Apple" className="w-4 h-4 object-contain" />
@@ -106,7 +146,13 @@ export const Login: React.FC = () => {
 
              {/* Google Button */}
              <button 
-                onClick={handleGoogleLogin} 
+                onClick={(e) => {
+                  console.log('[LOGIN] Button onClick event fired');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleGoogleLogin(e);
+                }}
+                type="button"
                 className="w-full bg-white rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
              >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="G" className="w-3 h-3" />

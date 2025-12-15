@@ -1,28 +1,47 @@
 
 import React, { useEffect, useState } from 'react';
-import { getSavedPosters, deletePoster, SavedPoster } from '../services/storageService';
+import { SavedPoster, posterService } from '../services/posterService';
 import { Trash2, Calendar, X, Share2, Loader2, AlertTriangle } from 'lucide-react';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Gallery: React.FC = () => {
   const [posters, setPosters] = useState<SavedPoster[]>([]);
   const [selectedImage, setSelectedImage] = useState<SavedPoster | null>(null);
   const [posterToDelete, setPosterToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { t, locale } = useLanguage();
+  const { getIdToken, currentUser } = useAuth();
 
   useEffect(() => {
-    loadPosters();
-  }, []);
+    if (currentUser) {
+      loadPosters();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentUser]);
 
   const loadPosters = async () => {
+    if (!currentUser) {
+      setError('Please sign in to view your gallery');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
     try {
-      const data = await getSavedPosters();
+      const idToken = await getIdToken();
+      if (!idToken) {
+        throw new Error('Authentication required');
+      }
+      const data = await posterService.getPosters(idToken);
       setPosters(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load posters", e);
+      setError(e.message || 'Failed to load posters');
     } finally {
       setIsLoading(false);
     }
@@ -34,15 +53,24 @@ export const Gallery: React.FC = () => {
   };
 
   const performDelete = async () => {
-    if (!posterToDelete) return;
+    if (!posterToDelete || !currentUser) return;
+    
     const id = posterToDelete;
-    setPosters(prev => prev.filter(p => p.id !== id));
     setPosterToDelete(null);
+    
     try {
-        await deletePoster(id);
-    } catch (error) {
-        console.error("Failed to delete", error);
-        loadPosters();
+      const idToken = await getIdToken();
+      if (!idToken) {
+        throw new Error('Authentication required');
+      }
+      await posterService.deletePoster(idToken, id);
+      // Remove from local state after successful deletion
+      setPosters(prev => prev.filter(p => p.id !== id));
+    } catch (error: any) {
+      console.error("Failed to delete", error);
+      // Reload posters to sync with server state
+      loadPosters();
+      alert(error.message || 'Failed to delete poster');
     }
   };
 
@@ -100,6 +128,16 @@ export const Gallery: React.FC = () => {
             <div className="flex justify-center mt-20">
                 <Loader2 className="animate-spin text-white" size={32} />
             </div>
+        ) : error ? (
+           <div className="flex flex-col items-center justify-center mt-20 text-red-400">
+                <p className="text-sm">{error}</p>
+                <button 
+                  onClick={loadPosters}
+                  className="mt-4 px-4 py-2 bg-white text-black rounded-full text-xs font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Retry
+                </button>
+           </div>
         ) : posters.length === 0 ? (
            <div className="flex flex-col items-center justify-center mt-20 text-gray-600">
                 <p>{t('gallery_empty')}</p>

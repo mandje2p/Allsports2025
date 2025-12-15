@@ -2,11 +2,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generatePosterImage } from '../services/geminiService';
-import { savePoster, saveUserBackground } from '../services/storageService';
+import { saveUserBackground } from '../services/storageService';
+import { posterService } from '../services/posterService';
 import { Loader2, Image as ImageIcon, Save, Check } from 'lucide-react';
 import { Match } from '../types';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 type AiStyle = 'players' | 'abstract' | 'prestige';
 type MatchStyle = 'stadium' | AiStyle;
@@ -15,6 +17,7 @@ export const Generator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { getIdToken, currentUser } = useAuth();
   
   const matches = useMemo(() => {
     return (location.state?.matches || []) as Match[];
@@ -141,10 +144,17 @@ export const Generator: React.FC = () => {
         venue: match.venue || 'Stadium',
         competition: match.competition
       };
-      const imageUrl = await generatePosterImage(posterConfig, styleToUse);
+      const imageUrl = await generatePosterImage(posterConfig, styleToUse, getIdToken);
       setMatchBackgrounds(prev => ({ ...prev, [index]: imageUrl }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Generation failed", error);
+      
+      // Check if we should redirect to subscription page (FREE user exceeded limit)
+      if (error.redirectToSubscription || (error.message && error.message.includes('redirectToSubscription'))) {
+        navigate('/subscription');
+        return;
+      }
+      
       alert(t('error_generation_failed') || "Generation failed.");
     } finally {
       setIsGenerating(false);
@@ -184,14 +194,36 @@ export const Generator: React.FC = () => {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
-        const timeout = setTimeout(() => { img.src = ""; reject(new Error("Timeout " + src)); }, 10000);
+        const timeout = setTimeout(() => { img.src = ""; reject(new Error("Timeout " + src)); }, 15000);
+        
+        // Use CORS proxy for external images that aren't already proxied or data URLs
+        let imageSrc = src;
+        if (!src.startsWith('data:') && !src.includes('wsrv.nl') && !src.startsWith('blob:')) {
+          // Check if it's an external URL (not same origin)
+          try {
+            const url = new URL(src);
+            const currentOrigin = window.location.origin;
+            if (url.origin !== currentOrigin && !src.includes('storage.googleapis.com')) {
+              // Use CORS proxy for external images
+              imageSrc = `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+            }
+          } catch (e) {
+            // If URL parsing fails, try direct load first
+          }
+        }
+        
         img.onload = () => { clearTimeout(timeout); resolve(img); };
         img.onerror = () => {
             clearTimeout(timeout);
-            if (src.includes('wsrv.nl') || src.startsWith('data:')) { reject(new Error("Failed " + src)); return; }
+            // If already using proxy or is data URL, reject
+            if (imageSrc.includes('wsrv.nl') || src.startsWith('data:') || imageSrc === src) {
+              reject(new Error("Failed to load image: " + src));
+              return;
+            }
+            // Try proxy as fallback
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
         };
-        img.src = src;
+        img.src = imageSrc;
     });
   };
 
@@ -397,13 +429,23 @@ export const Generator: React.FC = () => {
   };
 
   const handleSaveAll = async () => {
+    if (!currentUser) {
+      alert('Please sign in to save posters');
+      return;
+    }
+
     setIsSaving(true);
     try {
+        const idToken = await getIdToken();
+        if (!idToken) {
+          throw new Error('Authentication required');
+        }
+
         const loopCount = isProgramMode ? 1 : matches.length;
         for (let i = 0; i < loopCount; i++) {
              const bg = matchBackgrounds[i] || DEFAULT_BACKGROUND;
              const finalDataUrl = await createCompositeImage(matches[i], bg, i);
-             await savePoster({
+             await posterService.savePoster(idToken, {
                  match: matches[i],
                  backgroundImage: bg,
                  finalPosterUrl: finalDataUrl,
@@ -412,9 +454,9 @@ export const Generator: React.FC = () => {
              });
         }
         navigate('/gallery');
-    } catch (e) {
+    } catch (e: any) {
         console.error(e);
-        alert(t('error_save_failed') || "Storage full! Please delete some old posters.");
+        alert(e.message || t('error_save_failed') || "Failed to save posters. Please try again.");
     } finally {
         setIsSaving(false);
     }

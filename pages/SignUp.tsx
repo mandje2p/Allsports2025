@@ -8,9 +8,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { StickyHeader } from '../components/StickyHeader';
 
 export const SignUp: React.FC = () => {
+  console.log('[SIGNUP] SignUp component rendered');
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { signup, loginWithGoogle } = useAuth();
+  console.log('[SIGNUP] Auth functions available:', {
+    hasSignup: !!signup,
+    hasLoginWithGoogle: !!loginWithGoogle
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,21 +26,50 @@ export const SignUp: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-        await signup(email);
+        await signup(email, password);
         navigate('/onboarding');
     } catch (err: any) {
-        setError('Failed to create account');
+        setError(err.message || 'Failed to create account');
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSocialSignUp = async () => {
-    try {
-        await loginWithGoogle();
-        navigate('/onboarding');
-    } catch (err) {
-        console.error(err);
+  const handleSocialSignUp = async (e?: React.MouseEvent) => {
+    console.log('[SIGNUP] ========== Google signup button clicked ==========');
+    console.log('[SIGNUP] Event:', e ? 'Present' : 'Not provided');
+    console.log('[SIGNUP] loginWithGoogle function:', typeof loginWithGoogle);
+    
+    if (!loginWithGoogle) {
+      console.error('[SIGNUP] ✗ loginWithGoogle function is not available!');
+      setError('Authentication service not available');
+      return;
     }
+    
+    setError('');
+    setLoading(true);
+    console.log('[SIGNUP] Loading state set to true');
+    
+    try {
+        console.log('[SIGNUP] Calling loginWithGoogle from AuthContext...');
+        await loginWithGoogle();
+        console.log('[SIGNUP] ✓ loginWithGoogle completed - user authenticated');
+        console.log('[SIGNUP] Navigating to /onboarding');
+        navigate('/onboarding');
+    } catch (err: any) {
+        console.error('[SIGNUP] ✗ Error in handleSocialSignUp:', err);
+        console.error('[SIGNUP] Error details:', {
+          code: err?.code,
+          message: err?.message,
+          stack: err?.stack,
+          name: err?.name
+        });
+        setError(err.message || 'Failed to sign up with Google');
+        setLoading(false);
+        console.log('[SIGNUP] ============================================');
+    }
+    // Note: setLoading(false) is intentionally not in finally block
+    // because if redirect happens, this code won't execute
   };
 
   return (
@@ -95,7 +129,13 @@ export const SignUp: React.FC = () => {
            <div className="flex flex-col gap-2 mt-0">
              {/* Apple Button */}
              <button 
-                onClick={handleSocialSignUp} 
+                onClick={(e) => {
+                  console.log('[SIGNUP] Apple button onClick event fired (also uses Google auth)');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSocialSignUp(e);
+                }}
+                type="button"
                 className="w-full bg-black border border-white/20 rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
              >
                 <img src="https://all-sports.co/app/img/login/apple.png" alt="Apple" className="w-4 h-4 object-contain" />
@@ -104,7 +144,13 @@ export const SignUp: React.FC = () => {
 
              {/* Google Button */}
              <button 
-                onClick={handleSocialSignUp} 
+                onClick={(e) => {
+                  console.log('[SIGNUP] Button onClick event fired');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSocialSignUp(e);
+                }}
+                type="button"
                 className="w-full bg-white rounded-[30px] py-2.5 flex items-center justify-center gap-3 active:scale-95 transition-transform"
              >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="G" className="w-3 h-3" />

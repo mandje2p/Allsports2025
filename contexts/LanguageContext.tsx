@@ -102,6 +102,7 @@ const translations: Record<Language, Record<string, string>> = {
     sub_btn_subscribe: "Souscrire",
     sub_btn_subscribe_trial: "Souscrire (Testez 14 jours)",
     sub_btn_later: "Je le ferai plus tard",
+    profile_upgrade_plan: "Mettre à niveau votre forfait",
     
     plan_free_name: "Free",
     plan_free_period: "/mois",
@@ -245,6 +246,7 @@ const translations: Record<Language, Record<string, string>> = {
     sub_btn_subscribe: "Subscribe",
     sub_btn_subscribe_trial: "Subscribe (14 days trial)",
     sub_btn_later: "I'll do it later",
+    profile_upgrade_plan: "Upgrade your plan",
 
     plan_free_name: "Free",
     plan_free_period: "/mo",
@@ -387,6 +389,7 @@ const translations: Record<Language, Record<string, string>> = {
     sub_btn_subscribe: "Suscribirse",
     sub_btn_subscribe_trial: "Suscribirse (Prueba 14 días)",
     sub_btn_later: "Lo haré más tarde",
+    profile_upgrade_plan: "Actualizar tu plan",
 
     plan_free_name: "Free",
     plan_free_period: "/mes",

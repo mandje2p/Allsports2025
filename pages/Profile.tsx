@@ -4,11 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { StickyHeader } from '../components/StickyHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, Zap } from 'lucide-react';
+import { Camera, Edit2, MapPin, Briefcase, Mail, Lock, Image as ImageIcon, Calendar, CreditCard, LogOut, ChevronRight, ArrowLeft, Zap, Loader2 } from 'lucide-react';
 import { Button } from '../components/Button';
-
-// Local storage key
-const PROFILE_STORAGE_KEY = 'allsports_user_profile';
+import { profileService, UserProfile as ProfileUserProfile } from '../services/profileService';
 
 interface UserProfile {
   name: string;
@@ -43,29 +41,122 @@ const getBadgeStyle = (sub: string) => {
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, currentUser, getIdToken } = useAuth();
   
   // State for view vs edit mode
   const [viewMode, setViewMode] = useState<'VIEW' | 'EDIT'>('VIEW');
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [credits, setCredits] = useState(0);
+  const [monthlyCredits, setMonthlyCredits] = useState(0);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<'FREE' | 'BASIC' | 'PRO' | 'PREMIUM'>('FREE');
+  const [subscriptionPeriodEnd, setSubscriptionPeriodEnd] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load profile on mount from LocalStorage
+  // Load profile on mount from Firestore via backend
   useEffect(() => {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
-      setProfile(JSON.parse(saved));
-    } else {
-      setProfile(DEFAULT_PROFILE);
-    }
-    // Random credits for demo
-    setCredits(Math.floor(Math.random() * 101));
-  }, []);
+    const loadProfile = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const idToken = await getIdToken();
+        if (!idToken) {
+          throw new Error('Unable to get authentication token');
+        }
+
+        const savedProfile = await profileService.getProfile(currentUser.uid, idToken);
+        
+        if (savedProfile) {
+          // Convert Firestore profile to UserProfile (add password field for UI)
+          const userProfile: UserProfile = {
+            ...savedProfile,
+            password: '' // Password is not stored, just for UI demo
+          };
+          setProfile(userProfile);
+        } else {
+          // No profile found, use default but with user's email
+          setProfile({
+            ...DEFAULT_PROFILE,
+            email: currentUser.email || DEFAULT_PROFILE.email,
+            name: currentUser.displayName || DEFAULT_PROFILE.name,
+            avatarUrl: currentUser.photoURL || DEFAULT_PROFILE.avatarUrl
+          });
+        }
+      } catch (err: any) {
+        console.error('[PROFILE] Error loading profile:', err);
+        setError(err.message || 'Failed to load profile');
+        // Fallback to default profile with user's email
+        if (currentUser) {
+          setProfile({
+            ...DEFAULT_PROFILE,
+            email: currentUser.email || DEFAULT_PROFILE.email,
+            name: currentUser.displayName || DEFAULT_PROFILE.name,
+            avatarUrl: currentUser.photoURL || DEFAULT_PROFILE.avatarUrl
+          });
+        }
+      } finally {
+        // Load subscription status and credits
+        try {
+          const { getSubscriptionStatus } = await import('../services/subscriptionService');
+          const subscriptionData = await getSubscriptionStatus(getIdToken);
+          setCredits(subscriptionData.credits.remainingCredits);
+          setMonthlyCredits(subscriptionData.credits.monthlyCredits);
+          setSubscriptionPlan(subscriptionData.subscription.plan);
+          setSubscriptionPeriodEnd(subscriptionData.subscription.currentPeriodEnd);
+        } catch (err) {
+          console.warn('[PROFILE] Failed to load subscription credits:', err);
+          setCredits(0);
+          setMonthlyCredits(0);
+          setSubscriptionPlan('FREE');
+        }
+        
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [currentUser, getIdToken]);
 
   const handleSave = async (updatedProfile: UserProfile) => {
-    setProfile(updatedProfile);
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
-    setViewMode('VIEW');
+    if (!currentUser) {
+      setError('User not authenticated');
+      return;
+    }
+
+    try {
+      setError(null);
+      const idToken = await getIdToken();
+      if (!idToken) {
+        throw new Error('Unable to get authentication token');
+      }
+
+      // Convert UserProfile to ProfileUserProfile (remove password)
+      const profileToSave: ProfileUserProfile = {
+        name: updatedProfile.name,
+        companyName: updatedProfile.companyName,
+        companyAddress: updatedProfile.companyAddress,
+        email: updatedProfile.email,
+        avatarUrl: updatedProfile.avatarUrl,
+        subscription: updatedProfile.subscription
+      };
+
+      const savedProfile = await profileService.saveProfile(currentUser.uid, idToken, profileToSave);
+      
+      // Update local state
+      setProfile({
+        ...savedProfile,
+        password: updatedProfile.password // Keep password in local state for UI
+      });
+      setViewMode('VIEW');
+    } catch (err: any) {
+      console.error('[PROFILE] Error saving profile:', err);
+      setError(err.message || 'Failed to save profile');
+    }
   };
 
   const handleLogout = async () => {
@@ -80,6 +171,8 @@ export const Profile: React.FC = () => {
         onSave={handleSave} 
         onCancel={() => setViewMode('VIEW')} 
         t={t}
+        subscriptionPlan={subscriptionPlan}
+        subscriptionPeriodEnd={subscriptionPeriodEnd}
       />
     );
   }
@@ -92,7 +185,18 @@ export const Profile: React.FC = () => {
     { id: 3, imageUrl: BADGE_IMAGE, topText: "BLOQUÉ", bottomText: "", active: false },
   ];
 
-  const badgeStyle = getBadgeStyle(profile.subscription);
+  // Use subscriptionPlan from subscription service (source of truth) instead of profile.subscription
+  const badgeStyle = getBadgeStyle(subscriptionPlan);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white fade-in">
@@ -104,6 +208,13 @@ export const Profile: React.FC = () => {
 
       {/* Reduced bottom padding to prevent scroll, increased top padding to 44 - Reduced for better spacing */}
       <div className="pt-[129px] px-6 pb-0 flex flex-col gap-6">
+        
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-600 rounded-lg p-3 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
         
         {/* Top Section: Avatar & Info - Centered Layout */}
         <div className="flex flex-col items-center gap-5 mt-4">
@@ -134,9 +245,19 @@ export const Profile: React.FC = () => {
                   <div className="flex items-center gap-2 mt-1 px-3 py-1 bg-white/5 rounded-full border border-white/10">
                       <Zap size={10} className="text-yellow-400 fill-yellow-400" />
                       <span className="text-[10px] font-bold text-gray-300 font-['Syne'] uppercase">
-                          {credits}/100 CREDITS RESTANTS
+                          {monthlyCredits === -1 ? 'CRÉDITS ILLIMITÉS' : `${credits}/${monthlyCredits} CREDITS RESTANTS`}
                       </span>
                   </div>
+                  
+                  {/* Upgrade Link - Show when credits are 0 */}
+                  {credits === 0 && monthlyCredits !== -1 && (
+                    <button
+                      onClick={() => navigate('/subscription')}
+                      className="mt-2 text-[10px] font-bold text-yellow-400 hover:text-yellow-300 underline decoration-yellow-400/50 underline-offset-2 transition-colors font-['Syne'] uppercase"
+                    >
+                      {t('profile_upgrade_plan')}
+                    </button>
+                  )}
               </div>
 
               {/* Company & Details - Centered List */}
@@ -291,11 +412,15 @@ export const Profile: React.FC = () => {
 // ... EditProfilePage (remains same)
 const EditProfilePage: React.FC<{
   currentProfile: UserProfile;
-  onSave: (p: UserProfile) => void;
+  onSave: (p: UserProfile) => Promise<void>;
   onCancel: () => void;
   t: (k: string) => string;
-}> = ({ currentProfile, onSave, onCancel, t }) => {
+  subscriptionPlan: 'FREE' | 'BASIC' | 'PRO' | 'PREMIUM';
+  subscriptionPeriodEnd: string | null;
+}> = ({ currentProfile, onSave, onCancel, t, subscriptionPlan, subscriptionPeriodEnd }) => {
   const [formData, setFormData] = useState<UserProfile>(currentProfile);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof UserProfile, value: string) => {
@@ -417,8 +542,16 @@ const EditProfilePage: React.FC<{
                              <CreditCard size={20} />
                          </div>
                          <div>
-                             <span className="block text-sm font-bold text-white">PLAN PRO</span>
-                             <span className="block text-[10px] text-gray-400">Actif jusqu'au 12/12/2025</span>
+                             <span className="block text-sm font-bold text-white">PLAN {subscriptionPlan}</span>
+                             {subscriptionPeriodEnd ? (
+                               <span className="block text-[10px] text-gray-400">
+                                 Actif jusqu'au {new Date(subscriptionPeriodEnd).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                               </span>
+                             ) : (
+                               <span className="block text-[10px] text-gray-400">
+                                 {subscriptionPlan === 'FREE' ? 'Plan gratuit' : 'Actif'}
+                               </span>
+                             )}
                          </div>
                      </div>
                      <button onClick={openStripe} className="text-[10px] font-bold text-white underline decoration-white/30 underline-offset-4 hover:text-gray-300">
@@ -428,9 +561,30 @@ const EditProfilePage: React.FC<{
              </div>
           </div>
 
+          {error && (
+            <div className="mt-6 bg-red-900/20 border border-red-600 rounded-lg p-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          
           <div className="mt-12 mb-8">
-              <Button onClick={() => onSave(formData)} fullWidth className="bg-white text-black font-bold">
-                  {t('profile_btn_save')}
+              <Button 
+                onClick={async () => {
+                  setSaving(true);
+                  setError(null);
+                  try {
+                    await onSave(formData);
+                  } catch (err: any) {
+                    setError(err.message || 'Failed to save profile');
+                  } finally {
+                    setSaving(false);
+                  }
+                }} 
+                fullWidth 
+                className="bg-white text-black font-bold"
+                disabled={saving}
+              >
+                  {saving ? 'Saving...' : t('profile_btn_save')}
               </Button>
           </div>
        </div>
