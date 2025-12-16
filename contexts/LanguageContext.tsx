@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
+import { translationService, UserTranslations } from '../services/translationService';
 
 type Language = 'FR' | 'EN' | 'SP';
 
@@ -8,6 +9,7 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
   locale: string; // for date formatting
+  updateTranslation: (key: string, value: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -467,15 +469,88 @@ const locales: Record<Language, string> = {
   SP: 'es-ES'
 };
 
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('FR');
+const LANGUAGE_STORAGE_KEY = 'allsports_selected_language';
 
-  const t = (key: string) => {
-    return translations[language][key] || key;
+export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Load saved language from localStorage or default to 'FR'
+  const getInitialLanguage = (): Language => {
+    try {
+      const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (saved && (saved === 'FR' || saved === 'EN' || saved === 'SP')) {
+        return saved as Language;
+      }
+    } catch (error) {
+      console.error('[LANGUAGE] Error loading saved language:', error);
+    }
+    return 'FR';
   };
 
+  const [language, setLanguage] = useState<Language>(getInitialLanguage());
+  const [userTranslations, setUserTranslations] = useState<UserTranslations>({});
+
+  // Load user custom translations from localStorage on mount
+  useEffect(() => {
+    try {
+      const customTranslations = translationService.getUserTranslations();
+      setUserTranslations(customTranslations || {});
+    } catch (error) {
+      console.error('[LANGUAGE] Error loading user translations:', error);
+      setUserTranslations({});
+    }
+  }, []);
+
+  // Merge default translations with user custom translations
+  const mergedTranslations = useMemo((): Record<Language, Record<string, string>> => {
+    const merged: Record<Language, Record<string, string>> = {
+      FR: { ...translations.FR },
+      EN: { ...translations.EN },
+      SP: { ...translations.SP }
+    };
+
+    // Merge user custom translations for each language
+    if (userTranslations && Object.keys(userTranslations).length > 0) {
+      Object.keys(userTranslations).forEach((lang) => {
+        if (lang in merged && userTranslations[lang]) {
+          merged[lang as Language] = {
+            ...merged[lang as Language],
+            ...userTranslations[lang]
+          };
+        }
+      });
+    }
+
+    return merged;
+  }, [userTranslations]);
+
+  const t = useCallback((key: string) => {
+    return mergedTranslations[language][key] || key;
+  }, [mergedTranslations, language]);
+
+  // Wrapper for setLanguage that also saves to localStorage
+  const handleSetLanguage = useCallback((lang: Language) => {
+    setLanguage(lang);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    } catch (error) {
+      console.error('[LANGUAGE] Error saving language to localStorage:', error);
+    }
+  }, []);
+
+  const updateTranslation = useCallback((key: string, value: string) => {
+    try {
+      // Update the translation via the service (saves to localStorage)
+      const updated = translationService.updateTranslation(language, key, value);
+
+      // Update local state to trigger re-render
+      setUserTranslations(updated);
+    } catch (error) {
+      console.error('[LANGUAGE] Error updating translation:', error);
+      throw error;
+    }
+  }, [language]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, locale: locales[language] }}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t, locale: locales[language], updateTranslation }}>
       {children}
     </LanguageContext.Provider>
   );

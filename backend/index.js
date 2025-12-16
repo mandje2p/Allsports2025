@@ -1422,6 +1422,92 @@ app.post('/api/profile/:userId', async (req, res) => {
 });
 
 // ============================================================================
+// USER TRANSLATIONS ENDPOINTS
+// ============================================================================
+
+/**
+ * Get user's custom translations
+ * GET /api/translations/:userId
+ */
+app.get('/api/translations/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Verify the user is accessing their own translations
+    if (req.user.uid !== userId) {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
+    const translationsRef = db.collection('user_translations').doc(userId);
+    const translationsDoc = await translationsRef.get();
+
+    if (!translationsDoc.exists) {
+      return res.status(404).json({ error: 'No custom translations found' });
+    }
+
+    const data = translationsDoc.data();
+    res.json({
+      success: true,
+      translations: data.translations || {}
+    });
+  } catch (error) {
+    console.error('Error getting translations:', error);
+    res.status(500).json({ error: 'Failed to get translations' });
+  }
+});
+
+/**
+ * Save/Update user's custom translations
+ * POST /api/translations/:userId
+ */
+app.post('/api/translations/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Verify the user is updating their own translations
+    if (req.user.uid !== userId) {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
+    const { translations } = req.body;
+
+    if (!translations || typeof translations !== 'object') {
+      return res.status(400).json({ error: 'Translations object is required' });
+    }
+
+    const translationsData = {
+      translations,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const translationsRef = db.collection('user_translations').doc(userId);
+    const translationsDoc = await translationsRef.get();
+
+    if (translationsDoc.exists) {
+      // Update existing translations
+      delete translationsData.createdAt; // Don't update createdAt on updates
+      await translationsRef.update(translationsData);
+      console.log(`Translations updated for user: ${userId}`);
+    } else {
+      // Create new translations document
+      await translationsRef.set(translationsData);
+      console.log(`Translations created for user: ${userId}`);
+    }
+
+    // Return the updated translations
+    const updatedDoc = await translationsRef.get();
+    res.json({
+      success: true,
+      translations: updatedDoc.data().translations || {}
+    });
+  } catch (error) {
+    console.error('Error saving translations:', error);
+    res.status(500).json({ error: 'Failed to save translations' });
+  }
+});
+
+// ============================================================================
 // STRIPE SUBSCRIPTION ENDPOINTS
 // ============================================================================
 
