@@ -2,14 +2,19 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { Camera, User, Briefcase, MapPin } from 'lucide-react';
+import { Camera, User, Briefcase, MapPin, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StickyHeader } from '../components/StickyHeader';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { currentUser, getIdToken } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -37,14 +42,66 @@ export const Onboarding: React.FC = () => {
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newProfile = {
-        ...formData,
-        email: "user@example.com", 
-        password: "password",
-        subscription: "FREE" 
-    };
-    localStorage.setItem('allsports_user_profile', JSON.stringify(newProfile));
-    navigate('/subscription');
+    
+    if (!currentUser) {
+      setError('User not authenticated');
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.name || !formData.companyName || !formData.companyAddress) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const idToken = await getIdToken();
+      if (!idToken) {
+        throw new Error('Unable to get authentication token');
+      }
+
+      // Prepare profile data for saving
+      // Note: subscription is NOT set here - user must select a plan on /subscription page
+      const profileToSave = {
+        name: formData.name,
+        companyName: formData.companyName,
+        companyAddress: formData.companyAddress,
+        email: currentUser.email || '',
+        avatarUrl: formData.avatarUrl
+        // subscription will be set when user selects a plan on /subscription page
+      };
+
+      // Save to Firestore
+      await profileService.saveProfile(currentUser.uid, idToken, profileToSave);
+      
+      console.log('[ONBOARDING] Profile saved successfully, navigating to subscription');
+      
+      // Navigate to subscription page
+      navigate('/subscription');
+    } catch (err: any) {
+      console.error('[ONBOARDING] Error saving profile:', err);
+      
+      // Handle translated error messages (e.g., avatar cooldown)
+      if (err.translationKey && err.daysRemaining !== undefined) {
+        const translationKey = err.translationKey;
+        const daysRemaining = err.daysRemaining;
+        const translation = t(translationKey);
+        
+        // Format the translation with days remaining and handle singular/plural
+        const formattedMessage = translation
+          .replace('{days}', daysRemaining.toString())
+          .replace('{s}', daysRemaining !== 1 ? 's' : '');
+        
+        setError(formattedMessage);
+      } else {
+        setError(err.message || 'Failed to save profile. Please try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -97,9 +154,27 @@ export const Onboarding: React.FC = () => {
                 </div>
             </div>
 
-            <div className="mt-auto w-full">
-                <Button type="submit" fullWidth className="bg-white text-black font-bold rounded-[30px] py-3 text-sm font-inherit normal-case" style={{ fontFamily: 'inherit' }}>
-                    {t('next')}
+            <div className="mt-auto w-full flex flex-col gap-3">
+                {error && (
+                    <div className="bg-red-900/20 border border-red-600 rounded-lg p-3 text-red-400 text-sm text-center">
+                        {error}
+                    </div>
+                )}
+                <Button 
+                    type="submit" 
+                    fullWidth 
+                    className="bg-white text-black font-bold rounded-[30px] py-3 text-sm font-inherit normal-case" 
+                    style={{ fontFamily: 'inherit' }}
+                    disabled={saving}
+                >
+                    {saving ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {t('saving') || 'Saving...'}
+                        </span>
+                    ) : (
+                        t('next')
+                    )}
                 </Button>
             </div>
         </form>

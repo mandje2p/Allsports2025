@@ -81,24 +81,55 @@ export const Gallery: React.FC = () => {
          const homeName = poster.match.homeTeam.name.trim();
          const awayName = poster.match.awayTeam.name.trim();
          const fileName = `All Sports - ${homeName} vs ${awayName}.jpg`;
-         const response = await fetch(imageToShare);
-         const blob = await response.blob();
-         const file = new File([blob], fileName, { type: 'image/jpeg' });
+         const shareText = `${homeName} vs ${awayName}`;
 
-         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-             await navigator.share({ files: [file], title: fileName }).catch((e) => {
-                 if (e.name !== 'AbortError') console.error("Share failed:", e);
-             });
-         } else {
-             const link = document.createElement('a');
-             link.href = imageToShare;
-             link.download = fileName;
-             document.body.appendChild(link);
-             link.click();
-             document.body.removeChild(link);
+         // Check if Web Share API is available
+         if (navigator.share) {
+             try {
+                 // Try to share as file (works on Android Chrome, iOS Safari 15+)
+                 const response = await fetch(imageToShare);
+                 const blob = await response.blob();
+                 const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+                 // Check if file sharing is supported
+                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                     await navigator.share({
+                         files: [file],
+                         title: shareText,
+                         text: shareText
+                     });
+                     return; // Successfully shared
+                 } else {
+                     // File sharing not supported, try sharing URL with text
+                     await navigator.share({
+                         title: shareText,
+                         text: shareText,
+                         url: imageToShare
+                     });
+                     return; // Successfully shared
+                 }
+             } catch (shareError: any) {
+                 // User cancelled or share failed
+                 if (shareError.name === 'AbortError') {
+                     // User cancelled, don't show error
+                     return;
+                 }
+                 console.warn("Share API failed, falling back to download:", shareError);
+                 // Fall through to download fallback
+             }
          }
+
+         // Fallback: Download the image if share API is not available
+         const link = document.createElement('a');
+         link.href = imageToShare;
+         link.download = fileName;
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
      } catch (err) {
          console.error("Error sharing:", err);
+         // Show user-friendly error message
+         alert('Unable to share. Please try downloading the image instead.');
      }
   };
 

@@ -21,6 +21,7 @@ export const SubscriptionRequiredRoute: React.FC<SubscriptionRequiredRouteProps>
   const location = useLocation();
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Check if current route is allowed without subscription
@@ -29,10 +30,11 @@ export const SubscriptionRequiredRoute: React.FC<SubscriptionRequiredRouteProps>
   );
 
   useEffect(() => {
-    const checkSubscription = async () => {
+    const checkOnboardingAndSubscription = async () => {
       // If route is allowed without subscription, skip check
       if (isAllowedRoute) {
         setHasSelectedPlan(true);
+        setOnboardingComplete(true);
         setSubscriptionLoading(false);
         return;
       }
@@ -46,15 +48,30 @@ export const SubscriptionRequiredRoute: React.FC<SubscriptionRequiredRouteProps>
         setSubscriptionLoading(true);
         setError(null);
         
-        // Check if user has selected a plan by checking their profile
-        // New users won't have a subscription field in their profile
-        // Users who have selected a plan (including FREE) will have it set
         const idToken = await getIdToken();
         if (!idToken) {
           throw new Error('Unable to get authentication token');
         }
 
         const profile = await profileService.getProfile(currentUser.uid, idToken);
+        
+        // Check if onboarding is complete
+        // Onboarding is complete when profile exists AND has onboardingCompleted flag set to true
+        // This ensures users actually filled out the onboarding form, not just auto-created data
+        const isOnboardingDone = profile && 
+          (profile as any).onboardingCompleted === true &&
+          profile.name && 
+          profile.companyName && 
+          profile.companyAddress;
+        
+        setOnboardingComplete(!!isOnboardingDone);
+        
+        if (!isOnboardingDone) {
+          console.log('[SUBSCRIPTION_ROUTE] Onboarding not complete - user must complete onboarding form first');
+          setHasSelectedPlan(false);
+          setSubscriptionLoading(false);
+          return;
+        }
         
         // If profile exists and has a subscription field set, user has selected a plan
         // This includes FREE, BASIC, PRO, and PREMIUM plans
@@ -69,14 +86,15 @@ export const SubscriptionRequiredRoute: React.FC<SubscriptionRequiredRouteProps>
       } catch (err: any) {
         console.error('[SUBSCRIPTION_ROUTE] Error checking subscription:', err);
         setError(err.message);
-        // On error, assume no plan selected to redirect to subscription page
+        // On error, assume onboarding not complete and no plan selected
+        setOnboardingComplete(false);
         setHasSelectedPlan(false);
       } finally {
         setSubscriptionLoading(false);
       }
     };
 
-    checkSubscription();
+    checkOnboardingAndSubscription();
   }, [currentUser, authLoading, getIdToken, isAllowedRoute, location.pathname]);
 
   // Wait for auth to load
@@ -111,12 +129,19 @@ export const SubscriptionRequiredRoute: React.FC<SubscriptionRequiredRouteProps>
     return <>{children}</>;
   }
 
-  // If user hasn't selected a plan yet, redirect to subscription page (required onboarding)
+  // If onboarding is not complete, redirect to onboarding page first
+  if (!onboardingComplete) {
+    console.log('[SUBSCRIPTION_ROUTE] Redirecting to onboarding - profile incomplete');
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // If user hasn't selected a plan yet, redirect to subscription page
   if (!hasSelectedPlan) {
+    console.log('[SUBSCRIPTION_ROUTE] Redirecting to subscription - no plan selected');
     return <Navigate to="/subscription" replace />;
   }
 
-  // User has selected a plan (FREE, BASIC, PRO, or PREMIUM), allow access
+  // User has completed onboarding and selected a plan (FREE, BASIC, PRO, or PREMIUM), allow access
   return <>{children}</>;
 };
 

@@ -79,6 +79,7 @@ const translations: Record<Language, Record<string, string>> = {
     profile_btn_save: "Enregistrer",
     profile_change_photo: "Modifier le logo",
     profile_logout: "Se déconnecter",
+    error_avatar_cooldown: "Vous ne pouvez changer votre photo de profil qu'une fois tous les 2 mois. Veuillez réessayer dans {days} jour{s}.",
 
     // Auth & Onboarding
     auth_login_title: "Se connecter",
@@ -230,6 +231,7 @@ const translations: Record<Language, Record<string, string>> = {
     profile_btn_save: "Save",
     profile_change_photo: "Change logo",
     profile_logout: "Log out",
+    error_avatar_cooldown: "You can only change your profile picture once every 2 months. Please try again in {days} day{s}.",
 
     auth_login_title: "Log in",
     auth_signup_title: "Create Account",
@@ -378,6 +380,7 @@ const translations: Record<Language, Record<string, string>> = {
     profile_btn_save: "Guardar",
     profile_change_photo: "Cambiar logo",
     profile_logout: "Cerrar sesión",
+    error_avatar_cooldown: "Solo puedes cambiar tu foto de perfil una vez cada 2 meses. Por favor, inténtalo de nuevo en {days} día{s}.",
 
     auth_login_title: "Iniciar sesión",
     auth_signup_title: "Crear cuenta",

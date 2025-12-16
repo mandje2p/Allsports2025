@@ -155,7 +155,22 @@ export const Profile: React.FC = () => {
       setViewMode('VIEW');
     } catch (err: any) {
       console.error('[PROFILE] Error saving profile:', err);
-      setError(err.message || 'Failed to save profile');
+      
+      // Handle translated error messages (e.g., avatar cooldown)
+      if (err.translationKey && err.daysRemaining !== undefined) {
+        const translationKey = err.translationKey;
+        const daysRemaining = err.daysRemaining;
+        const translation = t(translationKey);
+        
+        // Format the translation with days remaining and handle singular/plural
+        const formattedMessage = translation
+          .replace('{days}', daysRemaining.toString())
+          .replace('{s}', daysRemaining !== 1 ? 's' : '');
+        
+        setError(formattedMessage);
+      } else {
+        setError(err.message || 'Failed to save profile');
+      }
     }
   };
 
@@ -578,7 +593,21 @@ const EditProfilePage: React.FC<{
                   try {
                     await onSave(formData);
                   } catch (err: any) {
-                    setError(err.message || 'Failed to save profile');
+                    // Handle translated error messages (e.g., avatar cooldown)
+                    if (err.translationKey && err.daysRemaining !== undefined) {
+                      const translationKey = err.translationKey;
+                      const daysRemaining = err.daysRemaining;
+                      const translation = t(translationKey);
+                      
+                      // Format the translation with days remaining and handle singular/plural
+                      const formattedMessage = translation
+                        .replace('{days}', daysRemaining.toString())
+                        .replace('{s}', daysRemaining !== 1 ? 's' : '');
+                      
+                      setError(formattedMessage);
+                    } else {
+                      setError(err.message || 'Failed to save profile');
+                    }
                   } finally {
                     setSaving(false);
                   }

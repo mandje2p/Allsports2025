@@ -802,60 +802,10 @@ app.get('/api/profile/:userId', async (req, res) => {
     const profileRef = db.collection('users').doc(userId);
     const profileDoc = await profileRef.get();
 
-    // If profile doesn't exist, create it with demo data
+    // If profile doesn't exist, return null (user must complete onboarding first)
     if (!profileDoc.exists) {
-      const userEmail = req.user.email || 'user@example.com';
-      const displayName = req.user.displayName || userEmail.split('@')[0] || 'User';
-      
-      // Generate demo data based on user info
-      // Use user's email prefix for company name if available
-      const emailPrefix = userEmail.split('@')[0];
-      const companyName = displayName !== emailPrefix 
-        ? `${displayName} Media` 
-        : `${emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)} Media`;
-      
-      const demoProfile = {
-        name: displayName,
-        email: userEmail,
-        companyName: companyName,
-        companyAddress: '123 Sport Ave, Paris',
-        avatarUrl: req.user.photoURL || 'https://all-sports.co/app/img/Allsports-logo.png',
-        // Don't set subscription field - user must select a plan on /subscription page first
-        // subscription will be set when user explicitly selects a plan (including FREE)
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-
-      await profileRef.set(demoProfile);
-      console.log(`[PROFILE] ✓ Auto-created profile with demo data for user: ${userId}`, {
-        name: demoProfile.name,
-        email: demoProfile.email,
-        companyName: demoProfile.companyName
-      });
-
-      // Also initialize subscription and credits for new user with proper period dates
-      const now = new Date();
-      const nextMonth = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
-      await db.collection('subscriptions').doc(userId).set({
-        userId: userId,
-        plan: 'FREE',
-        status: 'active',
-        stripeSubscriptionId: null,
-        currentPeriodStart: admin.firestore.Timestamp.fromDate(now),
-        currentPeriodEnd: admin.firestore.Timestamp.fromDate(nextMonth),
-        lastInvoiceId: null,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      // Initialize FREE user with 3 credits and 30-day period
-      const nowTimestamp = Date.now() / 1000;
-      const nextMonthTimestamp = nowTimestamp + (30 * 24 * 60 * 60); // 30 days from now
-      await resetCreditsForUser(userId, 'FREE', nowTimestamp, nextMonthTimestamp);
-      console.log(`[PROFILE] ✓ Initialized subscription and credits for user: ${userId} (3 credits for FREE plan)`);
-
-      // Return the newly created profile
-      const newProfileDoc = await profileRef.get();
-      return res.json(newProfileDoc.data());
+      console.log(`[PROFILE] Profile does not exist for user: ${userId} - user must complete onboarding`);
+      return res.status(404).json({ error: 'Profile not found' });
     }
 
     // Profile exists, return it
@@ -1384,19 +1334,94 @@ app.post('/api/profile/:userId', async (req, res) => {
       return res.status(400).json({ error: 'Name and email are required' });
     }
 
+    const profileRef = db.collection('users').doc(userId);
+    const profileDoc = await profileRef.get();
+
+    // Track if avatar is being changed
+    let avatarChanged = false;
+    let existingAvatarUrl = '';
+
+    // Check if avatar is being changed (only for existing profiles)
+    if (profileDoc.exists) {
+      const existingProfile = profileDoc.data();
+      existingAvatarUrl = existingProfile.avatarUrl || '';
+      const newAvatarUrl = avatarUrl || '';
+
+      // Check if avatar URL has actually changed
+      if (existingAvatarUrl !== newAvatarUrl && newAvatarUrl !== '') {
+        avatarChanged = true;
+        
+        // Avatar is being changed - check cooldown period (2 months = 60 days)
+        const lastAvatarChange = existingProfile.lastAvatarChangeTimestamp;
+        
+        if (lastAvatarChange) {
+          // Convert Firestore Timestamp to Date
+          const lastChangeDate = lastAvatarChange.toDate ? lastAvatarChange.toDate() : new Date(lastAvatarChange);
+          const now = new Date();
+          const daysSinceLastChange = Math.floor((now - lastChangeDate) / (1000 * 60 * 60 * 24));
+          const cooldownDays = 60; // 2 months
+
+          if (daysSinceLastChange < cooldownDays) {
+            const daysRemaining = cooldownDays - daysSinceLastChange;
+            const nextChangeDate = new Date(lastChangeDate);
+            nextChangeDate.setDate(nextChangeDate.getDate() + cooldownDays);
+            
+            console.log(`[PROFILE] Avatar change blocked for user ${userId}: ${daysSinceLastChange} days since last change (${daysRemaining} days remaining)`);
+            
+            return res.status(429).json({ 
+              error: 'Avatar change cooldown active',
+              translationKey: 'error_avatar_cooldown',
+              daysRemaining: daysRemaining,
+              nextChangeDate: nextChangeDate.toISOString(),
+              lastChangeDate: lastChangeDate.toISOString()
+            });
+          }
+        }
+
+        // Avatar change is allowed - will update timestamp below
+        console.log(`[PROFILE] Avatar change allowed for user ${userId}`);
+      }
+    }
+
     const profileData = {
       name,
       companyName: companyName || '',
       companyAddress: companyAddress || '',
       email,
       avatarUrl: avatarUrl || '',
-      subscription: subscription || 'FREE',
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const profileRef = db.collection('users').doc(userId);
-    const profileDoc = await profileRef.get();
+    // Only set subscription if explicitly provided
+    // During onboarding, subscription is not set - user must select a plan on /subscription page
+    if (subscription !== undefined && subscription !== null) {
+      profileData.subscription = subscription;
+    }
+
+    // Check if this is onboarding completion (profile doesn't exist or onboardingCompleted is false)
+    // Set onboardingCompleted flag when user completes onboarding form
+    const isNewProfile = !profileDoc.exists;
+    const existingOnboardingStatus = profileDoc.exists ? profileDoc.data().onboardingCompleted : false;
+    
+    // If profile is being created or updated with all required onboarding fields, mark onboarding as completed
+    if (name && companyName && companyAddress) {
+      profileData.onboardingCompleted = true;
+      if (isNewProfile) {
+        console.log(`[PROFILE] Onboarding completed for new user: ${userId}`);
+      } else if (!existingOnboardingStatus) {
+        console.log(`[PROFILE] Onboarding completed for existing user: ${userId}`);
+      }
+    }
+
+    // If avatar changed, update the lastAvatarChangeTimestamp
+    if (avatarChanged) {
+      profileData.lastAvatarChangeTimestamp = admin.firestore.FieldValue.serverTimestamp();
+      console.log(`[PROFILE] Updated lastAvatarChangeTimestamp for user ${userId}`);
+    } else if (!profileDoc.exists && avatarUrl && avatarUrl !== '') {
+      // For new profiles, set initial timestamp if avatar is provided
+      profileData.lastAvatarChangeTimestamp = admin.firestore.FieldValue.serverTimestamp();
+    }
 
     if (profileDoc.exists) {
       // Update existing profile

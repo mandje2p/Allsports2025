@@ -6,7 +6,7 @@ export interface UserProfile {
   companyAddress: string;
   email: string;
   avatarUrl: string;
-  subscription: 'FREE' | 'BASIC' | 'PRO' | 'PREMIUM';
+  subscription?: 'FREE' | 'BASIC' | 'PRO' | 'PREMIUM'; // Optional - not set during onboarding
 }
 
 export const profileService = {
@@ -48,7 +48,14 @@ export const profileService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `Failed to save profile: ${response.statusText}`);
+        // Create error object with translation data if available
+        const error = new Error(errorData.message || errorData.error || `Failed to save profile: ${response.statusText}`);
+        // Attach translation data for frontend to use
+        if (errorData.translationKey) {
+          (error as any).translationKey = errorData.translationKey;
+          (error as any).daysRemaining = errorData.daysRemaining;
+        }
+        throw error;
       }
 
       const data = await response.json();
