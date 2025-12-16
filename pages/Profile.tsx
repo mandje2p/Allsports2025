@@ -180,7 +180,7 @@ export const Profile: React.FC = () => {
   // Badges Data Mock
   const BADGE_IMAGE = "https://all-sports.co/app/img/badges/badge-C1.png";
   const badges = [
-    { id: 1, imageUrl: BADGE_IMAGE, topText: "ROI EUROPÉEN", bottomText: "LVL 3", active: true },
+    { id: 1, imageUrl: BADGE_IMAGE, topText: "ROI EUROPÉEN", bottomText: "LVL 3", active: false },
     { id: 2, imageUrl: BADGE_IMAGE, topText: "BLOQUÉ", bottomText: "", active: false },
     { id: 3, imageUrl: BADGE_IMAGE, topText: "BLOQUÉ", bottomText: "", active: false },
   ];

@@ -16,7 +16,7 @@ export const Badges: React.FC = () => {
       imageUrl: BADGE_IMAGE, 
       topText: "ROI EUROPÉEN", 
       bottomText: "LVL 3", 
-      active: true 
+      active: false 
     },
     // Génération de 7 autres badges bloqués identiques
     ...Array.from({ length: 7 }).map((_, i) => ({
