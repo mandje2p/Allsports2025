@@ -43,17 +43,61 @@ export const Generator: React.FC = () => {
   const DEFAULT_BACKGROUND = "https://all-sports.co/app/img/bg/foot/standard/bg-standard-1.jpg";
 
   useEffect(() => {
-     const saved = localStorage.getItem('allsports_user_profile');
-     if (saved) {
-         setUserProfile(JSON.parse(saved));
-     } else {
-         setUserProfile({
-             avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
-             companyAddress: "123 Sport Ave, Paris",
-             subscription: "PRO" // Default to PRO to ensure buttons are visible during demo
-         });
-     }
-  }, []);
+     const loadProfile = async () => {
+         try {
+             // First try to get from localStorage for quick access
+             const saved = localStorage.getItem('allsports_user_profile');
+             if (saved) {
+                 const cachedProfile = JSON.parse(saved);
+                 setUserProfile(cachedProfile);
+             }
+
+             // Always fetch fresh data from database if user is authenticated
+             if (currentUser) {
+                 try {
+                     const idToken = await getIdToken();
+                     if (idToken) {
+                         const { profileService } = await import('../services/profileService');
+                         const profile = await profileService.getProfile(currentUser.uid, idToken);
+                         if (profile) {
+                             setUserProfile({
+                                 avatarUrl: profile.avatarUrl || "https://all-sports.co/app/img/Allsports-logo.png",
+                                 companyAddress: profile.companyAddress || "",
+                                 subscription: profile.subscription || "FREE"
+                             });
+                             // Update localStorage with fresh data
+                             localStorage.setItem('allsports_user_profile', JSON.stringify({
+                                 avatarUrl: profile.avatarUrl || "https://all-sports.co/app/img/Allsports-logo.png",
+                                 companyAddress: profile.companyAddress || "",
+                                 subscription: profile.subscription || "FREE"
+                             }));
+                         }
+                     }
+                 } catch (error) {
+                     console.error('[GENERATOR] Error loading profile from database:', error);
+                     // Keep localStorage fallback if database fetch fails
+                 }
+             } else {
+                 // Fallback for unauthenticated users (shouldn't happen in normal flow)
+                 setUserProfile({
+                     avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
+                     companyAddress: "",
+                     subscription: "FREE"
+                 });
+             }
+         } catch (error) {
+             console.error('[GENERATOR] Error loading profile:', error);
+             // Fallback
+             setUserProfile({
+                 avatarUrl: "https://all-sports.co/app/img/Allsports-logo.png",
+                 companyAddress: "",
+                 subscription: "FREE"
+             });
+         }
+     };
+
+     loadProfile();
+  }, [currentUser, getIdToken]);
 
   useEffect(() => {
       if (location.state?.selectedBackground && location.state?.targetIndex !== undefined) {
