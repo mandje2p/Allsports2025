@@ -340,57 +340,59 @@ export const Profile: React.FC = () => {
         </div>
 
 
-        {/* Statistics Section */}
-        <div className="w-full">
-            <h3 
-                className="text-lg font-bold text-white mb-4 pl-1"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-                {t('profile_stats_title')}
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-2 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <ImageIcon size={48} />
+        {/* Statistics Section - Hidden for FREE users */}
+        {subscriptionPlan !== 'FREE' && (
+            <div className="w-full">
+                <h3 
+                    className="text-lg font-bold text-white mb-4 pl-1"
+                    style={{ fontFamily: "'Syne', sans-serif" }}
+                >
+                    {t('profile_stats_title')}
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-2 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <ImageIcon size={48} />
+                        </div>
+                        <span className="text-4xl text-white font-normal" style={{ fontFamily: "'Syne', sans-serif" }}>142</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{t('stats_visuals')}</span>
                     </div>
-                    <span className="text-4xl text-white font-normal" style={{ fontFamily: "'Syne', sans-serif" }}>142</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{t('stats_visuals')}</span>
-                </div>
 
-                <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
-                     {/* Fav League - Full fill, no padding, no background ring */}
-                     <div className="w-10 h-10 rounded-full overflow-hidden">
-                         <img src="https://all-sports.co/app/img/leagues/Icons-Ligue1.png" className="w-full h-full object-cover" alt="Ligue 1" />
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_league')}</span>
-                        <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>LIGUE 1</span>
-                     </div>
-                </div>
+                    <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
+                         {/* Fav League - Full fill, no padding, no background ring */}
+                         <div className="w-10 h-10 rounded-full overflow-hidden">
+                             <img src="https://all-sports.co/app/img/leagues/Icons-Ligue1.png" className="w-full h-full object-cover" alt="Ligue 1" />
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_league')}</span>
+                            <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>LIGUE 1</span>
+                         </div>
+                    </div>
 
-                {/* Stat Card 3: Fav Club - Full fill, no padding, no background ring */}
-                <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
-                     <div className="w-10 h-10 rounded-full overflow-hidden">
-                        <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-cover" />
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_club')}</span>
-                        <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>PSG</span>
-                     </div>
-                </div>
+                    {/* Stat Card 3: Fav Club - Full fill, no padding, no background ring */}
+                    <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
+                         <div className="w-10 h-10 rounded-full overflow-hidden">
+                            <img src="https://media.api-sports.io/football/teams/85.png" alt="PSG" className="w-full h-full object-cover" />
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_fav_club')}</span>
+                            <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>PSG</span>
+                         </div>
+                    </div>
 
-                <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
-                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                        <Calendar size={20} className="text-white" />
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_member_since')}</span>
-                        <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>DEC 2024</span>
-                     </div>
+                    <div className="bg-[#111] border border-white/5 rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
+                         <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                            <Calendar size={20} className="text-white" />
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mb-1">{t('stats_member_since')}</span>
+                            <span className="text-sm font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>DEC 2024</span>
+                         </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        )}
 
         {/* Logout Button - Red Border, Black BG, Red Text, Small, No Bottom Padding in container, increased padding bottom to 10px */}
         <div className="w-full flex justify-center pt-2 pb-[10px]">
@@ -418,6 +420,7 @@ const EditProfilePage: React.FC<{
   subscriptionPlan: 'FREE' | 'BASIC' | 'PRO' | 'PREMIUM';
   subscriptionPeriodEnd: string | null;
 }> = ({ currentProfile, onSave, onCancel, t, subscriptionPlan, subscriptionPeriodEnd }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<UserProfile>(currentProfile);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -440,8 +443,8 @@ const EditProfilePage: React.FC<{
     }
   };
 
-  const openStripe = () => {
-      window.open('https://stripe.com', '_blank');
+  const handleManageSubscription = () => {
+      navigate('/subscription');
   };
 
   return (
@@ -554,7 +557,7 @@ const EditProfilePage: React.FC<{
                              )}
                          </div>
                      </div>
-                     <button onClick={openStripe} className="text-[10px] font-bold text-white underline decoration-white/30 underline-offset-4 hover:text-gray-300">
+                     <button onClick={handleManageSubscription} className="text-[10px] font-bold text-white underline decoration-white/30 underline-offset-4 hover:text-gray-300">
                          {t('profile_manage_sub')}
                      </button>
                  </div>

@@ -5,7 +5,7 @@ import { BottomNav } from './BottomNav';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const hideNavRoutes = ['/login', '/welcome', '/signup', '/onboarding'];
+  const hideNavRoutes = ['/login', '/welcome', '/signup', '/onboarding', '/subscription'];
   const showNav = !hideNavRoutes.includes(location.pathname);
 
   return (
