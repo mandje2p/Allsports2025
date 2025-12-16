@@ -168,6 +168,8 @@ const translations: Record<Language, Record<string, string>> = {
     gallery_empty: "Aucun poster enregistré.",
     cancel: "Annuler",
     delete: "Supprimer",
+    matches_not_found: "Aucun match trouvé",
+    matches_check_later: "Réessayez plus tard pour les prochains matchs.",
   },
   EN: {
     nav_home: "Home",
@@ -314,6 +316,8 @@ const translations: Record<Language, Record<string, string>> = {
     gallery_empty: "No saved posters yet.",
     cancel: "Cancel",
     delete: "Delete",
+    matches_not_found: "No matches found",
+    matches_check_later: "Try checking later for upcoming games.",
   },
   SP: {
     nav_home: "Inicio",
@@ -460,6 +464,8 @@ const translations: Record<Language, Record<string, string>> = {
     gallery_empty: "Aún no hay pósters guardados.",
     cancel: "Cancelar",
     delete: "Eliminar",
+    matches_not_found: "No se encontraron partidos",
+    matches_check_later: "Vuelve a revisar más tarde para los próximos partidos.",
   }
 };
 

@@ -246,8 +246,8 @@ export const MatchCalendar: React.FC = () => {
             ) : uniqueDates.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-10 opacity-60 mt-20">
                     <CalendarDays size={48} className="mb-4" />
-                    <p className="text-lg font-bold mb-2">No matches found</p>
-                    <p className="text-xs text-gray-400">Try checking later for upcoming games.</p>
+                    <p className="text-lg font-bold mb-2">{t('matches_not_found')}</p>
+                    <p className="text-xs text-gray-400">{t('matches_check_later')}</p>
                 </div>
             ) : (
                 <div className="px-4 space-y-3">
