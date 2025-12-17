@@ -103,13 +103,8 @@ const corsOptions = {
 app.use(requestLogger);
 
 // Apply CORS middleware
+// This automatically handles all OPTIONS preflight requests
 app.use(cors(corsOptions));
-
-// Explicit OPTIONS handler for all routes (fallback for preflight requests)
-app.options('*', cors(corsOptions), (req, res) => {
-  console.log(`[CORS] OPTIONS preflight request for: ${req.path}`);
-  res.sendStatus(204);
-});
 
 // IMPORTANT: Webhook route needs raw body for Stripe signature verification
 // Apply raw body parser ONLY for webhook route BEFORE JSON parser
