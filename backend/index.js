@@ -85,6 +85,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:5174',
+      'https://app.all-sports.co',
+      'https://api.all-sports.co',
       process.env.FRONTEND_URL
     ].filter(Boolean);
 
