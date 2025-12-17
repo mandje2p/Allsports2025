@@ -102,9 +102,32 @@ const corsOptions = {
 // Middleware
 app.use(requestLogger);
 
-// Apply CORS middleware
+// Apply CORS middleware FIRST - before any other middleware
 // This automatically handles all OPTIONS preflight requests
 app.use(cors(corsOptions));
+
+// Additional CORS headers middleware as fallback
+app.use((req, res, next) => {
+  // Set CORS headers for all requests
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log(`[CORS] Handling OPTIONS preflight request for: ${req.path}`);
+    return res.status(204).end();
+  }
+  
+  next();
+});
 
 // IMPORTANT: Webhook route needs raw body for Stripe signature verification
 // Apply raw body parser ONLY for webhook route BEFORE JSON parser
