@@ -35,7 +35,10 @@ services:
       - PORT=5001
       - NODE_ENV=${NODE_ENV:-production}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5004}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5004}
+      # ALLOWED_ORIGINS: Comma-separated list of allowed origins for CORS
+      # Default includes localhost and production domains
+      # For production, set: ALLOWED_ORIGINS=https://app.all-sports.co,https://api.all-sports.co
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5004,http://localhost:5173,http://localhost:3000,http://localhost:5174,https://app.all-sports.co,https://api.all-sports.co}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
