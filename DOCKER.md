@@ -62,7 +62,7 @@ VITE_API_BASE_URL=http://localhost:5001
 # Backend
 PORT=5001
 FRONTEND_URL=http://localhost:5004
-ALLOWED_ORIGINS=http://localhost:5004
+# CORS is configured to accept all origins (no restrictions)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 GEMINI_API_KEY=...
@@ -107,7 +107,7 @@ Update `.env` with production values:
 ```env
 VITE_API_BASE_URL=https://api.sedx3d.com
 FRONTEND_URL=https://allsports.sedx3d.com
-ALLOWED_ORIGINS=https://allsports.sedx3d.com
+# CORS is configured to accept all origins (no restrictions)
 NODE_ENV=production
 ```
 
@@ -212,6 +212,7 @@ However, for production, use the built images as shown in the current setup.
 - Check container logs: `docker-compose logs`
 - Inspect container: `docker-compose exec backend sh`
 - Check network: `docker network inspect allsports_allsports-network`
+
 
 
 

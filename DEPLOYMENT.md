@@ -106,7 +106,7 @@ Create a `.env` file in the project root (copy from `backend/.env.example`):
 PORT=3001
 NODE_ENV=production
 FRONTEND_URL=https://allsports.sedx3d.com
-ALLOWED_ORIGINS=https://allsports.sedx3d.com
+# CORS is configured to accept all origins (no restrictions)
 STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -249,8 +249,8 @@ sudo certbot --nginx -d api.sedx3d.com
 - Verify firewall allows port 3001 (if not using Nginx proxy)
 
 ### CORS errors
-- Verify `ALLOWED_ORIGINS` in backend `.env` includes `https://allsports.sedx3d.com`
-- Check backend logs for CORS warnings
+- CORS is configured to accept all origins - no configuration needed
+- Check backend logs if issues persist
 
 ### Stripe webhooks not working
 - Verify webhook URL in Stripe Dashboard matches `https://api.sedx3d.com/api/subscriptions/webhook`
@@ -275,11 +275,12 @@ sudo certbot --nginx -d api.sedx3d.com
 - `PORT` - Backend port (default: 3001)
 - `NODE_ENV` - Environment (production/development)
 - `FRONTEND_URL` - Frontend URL for redirects
-- `ALLOWED_ORIGINS` - Comma-separated list of allowed CORS origins
 - `STRIPE_SECRET_KEY` - Stripe secret key
 - `STRIPE_WEBHOOK_SECRET` - Stripe webhook signing secret
 - `GEMINI_API_KEY` - Google Gemini API key
 - `FIREBASE_STORAGE_BUCKET` - Firebase storage bucket (optional, auto-detected)
+
+**Note**: CORS is configured to accept all origins - no `ALLOWED_ORIGINS` variable needed.
 
 ## 🔐 Security Checklist
 
@@ -287,7 +288,7 @@ sudo certbot --nginx -d api.sedx3d.com
 - [ ] `.env` files are not committed to git (already in `.gitignore`)
 - [ ] `backend/private-key.json` is not committed to git (already in `.gitignore`)
 - [ ] Using production Stripe keys (not test keys)
-- [ ] CORS is properly configured
+- [ ] CORS accepts all origins (configured in code)
 - [ ] Nginx security headers are set
 - [ ] Backend is running behind Nginx (not directly exposed)
 - [ ] Firewall is configured properly
@@ -298,6 +299,7 @@ For issues or questions, check:
 - Backend logs: `pm2 logs allsports-backend`
 - Nginx logs: `/var/log/nginx/error.log`
 - Stripe webhook logs: Stripe Dashboard → Webhooks → Your endpoint
+
 
 
 

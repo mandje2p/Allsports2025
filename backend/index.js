@@ -78,30 +78,11 @@ const requestLogger = (req, res, next) => {
   next();
 };
 
-// CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:5174',
-      'https://app.all-sports.co',
-      'https://api.all-sports.co',
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
+// CORS Configuration - Accept all origins
+console.log(`[CORS] CORS configured to accept all origins`);
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Accept all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -120,7 +101,15 @@ const corsOptions = {
 
 // Middleware
 app.use(requestLogger);
+
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Explicit OPTIONS handler for all routes (fallback for preflight requests)
+app.options('*', cors(corsOptions), (req, res) => {
+  console.log(`[CORS] OPTIONS preflight request for: ${req.path}`);
+  res.sendStatus(204);
+});
 
 // IMPORTANT: Webhook route needs raw body for Stripe signature verification
 // Apply raw body parser ONLY for webhook route BEFORE JSON parser
@@ -146,8 +135,8 @@ app.use((req, res, next) => {
 // Authentication middleware to validate Firebase ID token
 const authMiddleware = async (req, res, next) => {
   try {
-    // Skip authentication for health check endpoint and image proxy
-    if (req.path === '/health' || req.path === '/' || req.path === '/api/proxy-image') {
+    // Skip authentication for OPTIONS requests (CORS preflight), health check endpoint and image proxy
+    if (req.method === 'OPTIONS' || req.path === '/health' || req.path === '/' || req.path === '/api/proxy-image') {
       return next();
     }
 
@@ -792,11 +781,12 @@ const getPlanFromPriceId = (priceId) => {
 // END STRIPE HELPERS
 // ============================================================================
 
-// Apply authentication middleware to all routes except health check, proxy, and webhook
+// Apply authentication middleware to all routes except health check, proxy, webhook, and OPTIONS requests
 // IMPORTANT: Webhook must be before auth middleware since it uses raw body
+// IMPORTANT: OPTIONS requests (CORS preflight) must skip auth
 app.use((req, res, next) => {
-  // Skip auth for health check, image proxy, and webhook
-  if (req.path === '/health' || req.path === '/' || req.path === '/api/proxy-image' || req.path === '/api/subscriptions/webhook') {
+  // Skip auth for OPTIONS requests (CORS preflight), health check, image proxy, and webhook
+  if (req.method === 'OPTIONS' || req.path === '/health' || req.path === '/' || req.path === '/api/proxy-image' || req.path === '/api/subscriptions/webhook') {
     return next();
   }
   return authMiddleware(req, res, next);
